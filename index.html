@@ -161,9 +161,1368 @@ footer{border-top:1px solid var(--line);padding:22px 0;font-size:13px;color:var(
   <div class="pfoot"><i id="presBar"></i></div>
 </div>
 <div class="toast" id="toast"></div>
-<script src="config.js"></script>
-<script src="content.js"></script>
-<script src="content2.js"></script>
-<script src="app.js"></script>
+<script>
+/* Configuration de RiskAcadémie (version GitHub Pages) */
+window.RA_CONFIG = {
+  // Adresse du laboratoire Streamlit, une fois déployé (laisser "" pour masquer le lien)
+  labUrl: "https://riskacademie-lab.streamlit.app",
+  // Empreinte SHA-256 du code formateur. Pour changer de code :
+  //   echo -n "MonNouveauCode" | sha256sum      (Linux / macOS : shasum -a 256)
+  // puis remplacer la valeur ci-dessous.
+  trainerHash: "8bb250b3c3e396883926196b11ae5b08ded8960ff3180f5b05d3703fd45edd02"
+};
+
+</script>
+<script>
+/* Contenu pédagogique — RiskAcadémie (niveau intermédiaire, français) */
+window.MODULES = [
+{
+  id: "marche",
+  num: 1,
+  titre: "Risque de marché",
+  accroche: "Mesurer, tester et capitaliser le risque des portefeuilles de négociation : de la VaR à la FRTB.",
+  couleur: "#1f4e79",
+  calcs: ["var"],
+  lecons: [
+  {
+    id: "m1-l1",
+    titre: "Mesures de risque : sensibilités, VaR et Expected Shortfall",
+    duree: 25,
+    objectifs: ["Distinguer mesures locales (sensibilités) et mesures globales (VaR, ES)", "Comparer les trois grandes méthodes de calcul de la VaR", "Comprendre pourquoi l'ES est une mesure cohérente"],
+    sections: [
+      { h: "Des sensibilités aux mesures globales", html: `
+        <p>La première ligne de mesure du risque de marché est constituée des <strong>sensibilités</strong> : la variation de valeur d'un portefeuille pour un petit mouvement d'un facteur de risque. On parle de delta et de gamma (sous-jacent), de vega (volatilité), de thêta (temps) et, pour les taux, de <strong>DV01</strong> ou PV01 (variation de valeur pour 1 point de base).</p>
+        <p>Les sensibilités sont indispensables au pilotage quotidien des desks et à la fixation de limites, mais elles ne s'additionnent pas entre facteurs de nature différente et ne disent rien de la probabilité d'une perte. D'où le besoin de <strong>mesures globales</strong>, exprimées en euros et associées à une probabilité.</p>` },
+      { h: "La Value-at-Risk (VaR)", html: `
+        <p>La VaR au niveau de confiance α et à l'horizon h est la perte qui ne sera pas dépassée avec une probabilité α sur cet horizon. C'est un <strong>quantile</strong> de la distribution des pertes et profits (P&amp;L).</p>
+        <div class="f">P( Perte<sub>h</sub> &gt; VaR<sub>α,h</sub> ) = 1 − α</div>
+        <p>Exemple : une VaR 99 % à 1 jour de 2 M€ signifie qu'en moyenne, un jour sur cent, la perte devrait dépasser 2 M€. La VaR ne dit rien de l'ampleur de la perte au-delà de ce seuil.</p>
+        <p>Sous l'hypothèse de rendements indépendants et identiquement distribués, on passe d'un horizon à un autre par la <strong>règle de la racine du temps</strong> : VaR<sub>10j</sub> ≈ VaR<sub>1j</sub> × √10.</p>` },
+      { h: "Trois méthodes de calcul", html: `
+        <table class="t"><thead><tr><th>Méthode</th><th>Principe</th><th>Forces</th><th>Limites</th></tr></thead><tbody>
+        <tr><td><strong>Paramétrique</strong> (variance-covariance)</td><td>P&amp;L supposé normal ; VaR = z<sub>α</sub> · σ<sub>P</sub> · V</td><td>Rapide, analytique, décomposable</td><td>Sous-estime les queues épaisses, mal adaptée aux options</td></tr>
+        <tr><td><strong>Historique</strong></td><td>Réévaluation du portefeuille sur les variations observées (souvent 250 à 500 jours)</td><td>Aucune hypothèse de loi, capture corrélations et non-linéarités</td><td>Dépend de la fenêtre ; « effet fantôme » à la sortie d'un choc</td></tr>
+        <tr><td><strong>Monte-Carlo</strong></td><td>Simulation de milliers de scénarios selon un modèle stochastique</td><td>Flexible, produits complexes</td><td>Coûteuse en calcul, risque de modèle</td></tr>
+        </tbody></table>` },
+      { h: "L'Expected Shortfall (ES)", html: `
+        <p>L'ES (ou CVaR) est la <strong>perte moyenne au-delà de la VaR</strong> :</p>
+        <div class="f">ES<sub>α</sub> = E[ Perte | Perte ≥ VaR<sub>α</sub> ]</div>
+        <p>Contrairement à la VaR, l'ES est une mesure <strong>cohérente</strong> au sens d'Artzner et al. (1999) : elle respecte notamment la <strong>sous-additivité</strong> (le risque d'un portefeuille agrégé n'excède pas la somme des risques), ce qui valorise la diversification. Elle tient compte de la forme de la queue de distribution.</p>
+        <p>Sous loi normale, l'ES 97,5 % est très proche de la VaR 99 % (≈ 2,34σ contre 2,33σ) : c'est ce qui a guidé le calibrage de la FRTB. Avec des queues épaisses, l'ES devient nettement supérieure.</p>` }
+    ],
+    points: ["La VaR est un quantile ; l'ES est une moyenne conditionnelle de la queue", "La VaR n'est pas toujours sous-additive ; l'ES l'est", "Le choix de la méthode dépend du portefeuille (linéaire ou optionnel) et des données disponibles"]
+  },
+  {
+    id: "m1-l2",
+    titre: "Backtesting et stress tests",
+    duree: 20,
+    objectifs: ["Mettre en œuvre un backtesting de VaR", "Interpréter les zones de Bâle", "Concevoir un programme de stress tests"],
+    sections: [
+      { h: "Le backtesting", html: `
+        <p>Le backtesting compare chaque jour la VaR prévue avec le P&amp;L réalisé. Une <strong>exception</strong> survient lorsque la perte dépasse la VaR. Sur 250 jours, une VaR 99 % bien calibrée devrait produire environ 2,5 exceptions.</p>
+        <p>On distingue le P&amp;L <strong>hypothétique</strong> (positions figées, variations de marché seules) et le P&amp;L <strong>réel</strong> (incluant l'intra-journalier et les nouvelles opérations). Le régulateur exige les deux.</p>` },
+      { h: "Les zones « feux tricolores » de Bâle", html: `
+        <table class="t"><thead><tr><th>Exceptions (250 j, VaR 99 %)</th><th>Zone</th><th>Conséquence</th></tr></thead><tbody>
+        <tr><td>0 à 4</td><td><span class="tag ok">Verte</span></td><td>Modèle jugé acceptable</td></tr>
+        <tr><td>5 à 9</td><td><span class="tag warn">Jaune</span></td><td>Majoration progressive du multiplicateur de capital</td></tr>
+        <tr><td>10 et plus</td><td><span class="tag ko">Rouge</span></td><td>Modèle présumé défaillant, majoration maximale, revue du modèle</td></tr>
+        </tbody></table>
+        <p>Des tests statistiques complètent l'analyse : le test de <strong>Kupiec</strong> (fréquence des exceptions) et celui de <strong>Christoffersen</strong> (indépendance des exceptions, qui ne doivent pas être groupées).</p>` },
+      { h: "Stress tests et stressed VaR", html: `
+        <p>La VaR décrit des conditions « normales ». Les <strong>stress tests</strong> mesurent l'impact de scénarios extrêmes mais plausibles :</p>
+        <ul>
+          <li><strong>Historiques</strong> : rejouer 2008, la crise de la dette souveraine de 2011, mars 2020 ou le choc de taux de 2022 ;</li>
+          <li><strong>Hypothétiques</strong> : scénarios construits par la banque (choc géopolitique, crise d'un secteur) ;</li>
+          <li><strong>Inversés</strong> (reverse stress tests) : identifier les scénarios qui rendraient la banque non viable.</li>
+        </ul>
+        <p>Sous Bâle 2.5, la <strong>stressed VaR</strong> calcule la VaR du portefeuille actuel sur une période de 12 mois de tension significative. La FRTB remplace ce couple VaR / sVaR par une ES calibrée sur une période de stress.</p>` }
+    ],
+    points: ["Environ 2,5 exceptions attendues sur 250 jours pour une VaR 99 %", "Zones : 0-4 verte, 5-9 jaune, 10+ rouge", "Les stress tests complètent la VaR, ils ne la remplacent pas"]
+  },
+  {
+    id: "m1-l3",
+    titre: "La FRTB (Fundamental Review of the Trading Book)",
+    duree: 30,
+    objectifs: ["Connaître l'architecture de l'approche standard (SA)", "Comprendre les exigences de l'approche par modèles internes (IMA)", "Situer le calendrier européen"],
+    sections: [
+      { h: "Pourquoi la FRTB ?", html: `
+        <p>La crise de 2008 a montré les faiblesses de Bâle 2.5 : frontière poreuse entre portefeuille de négociation et portefeuille bancaire (arbitrage réglementaire), VaR insensible aux queues, horizon de 10 jours uniforme quelle que soit la liquidité des actifs.</p>
+        <p>La FRTB, finalisée par le Comité de Bâle en janvier 2019 (BCBS d457), répond par trois axes : une <strong>frontière</strong> plus stricte entre trading book et banking book, une <strong>approche standard</strong> sensible au risque et une <strong>approche modèles internes</strong> fondée sur l'ES avec des horizons de liquidité différenciés.</p>` },
+      { h: "L'approche standard (SA)", html: `
+        <p>Le capital SA est la somme de trois blocs :</p>
+        <div class="f">Capital SA = SbM + DRC + RRAO</div>
+        <ul>
+          <li><strong>SbM</strong> (Sensitivities-based Method) : agrégation des sensibilités <em>delta</em>, <em>vega</em> et <em>curvature</em> par classe de risque (taux, spread de crédit non titrisé, titrisation, actions, matières premières, change), avec pondérations et corrélations réglementaires, calculées sous trois scénarios de corrélation (bas, moyen, élevé) ;</li>
+          <li><strong>DRC</strong> (Default Risk Charge) : risque de défaut soudain des émetteurs (crédit et actions) ;</li>
+          <li><strong>RRAO</strong> (Residual Risk Add-On) : risques résiduels des produits exotiques non captés par les sensibilités.</li>
+        </ul>` },
+      { h: "L'approche modèles internes (IMA)", html: `
+        <ul>
+          <li><strong>ES 97,5 %</strong> calibrée sur une période de stress, avec des <strong>horizons de liquidité</strong> de 10, 20, 40, 60 ou 120 jours selon le facteur de risque ;</li>
+          <li>Approbation <strong>desk par desk</strong>, conditionnée à un backtesting et au test d'<strong>attribution du P&amp;L</strong> (PLA), qui compare le P&amp;L hypothétique au P&amp;L théorique du modèle de risque via la corrélation de Spearman et la statistique de Kolmogorov-Smirnov ;</li>
+          <li>Les facteurs de risque <strong>non modélisables</strong> (NMRF), faute d'observations de prix réelles suffisantes, sont capitalisés par un scénario de stress dédié (SES) ;</li>
+          <li>Un modèle <strong>DRC interne</strong> remplace l'IRC de Bâle 2.5.</li>
+        </ul>` },
+      { h: "Calendrier européen", html: `
+        <p>Dans l'Union européenne, la quasi-totalité du paquet bancaire CRR3/CRD6 s'applique depuis le 1<sup>er</sup> janvier 2025, mais l'application de la FRTB pour le calcul des exigences de fonds propres a été reportée à deux reprises par actes délégués de la Commission, jusqu'au <strong>1<sup>er</sup> janvier 2027</strong>, afin de préserver l'équité de concurrence avec les autres juridictions.</p>
+        <p>En juin 2026, la Commission a adopté un nouvel acte délégué introduisant des <strong>aménagements ciblés et temporaires</strong> (pour une durée de trois ans) de l'application de la FRTB, sans modifier les règles elles-mêmes. Les États-Unis et le Royaume-Uni suivent leur propre calendrier.</p>
+        <p class="note">Point de vigilance : ce calendrier évolue ; vérifie toujours les textes en vigueur (CRR, actes délégués, publications de l'EBA) avant une décision opérationnelle.</p>` }
+    ],
+    points: ["Capital SA = SbM + DRC + RRAO", "IMA : ES 97,5 %, horizons de liquidité, PLA et backtesting par desk, NMRF", "UE : application de la FRTB au 1er janvier 2027"]
+  }],
+  quiz: [
+    { q: "Une VaR 99 % à 1 jour de 2 M€ signifie que :", o: ["La perte maximale possible sur un jour est de 2 M€", "Dans 99 % des cas, la perte sur un jour n'excédera pas 2 M€", "La perte moyenne au-delà du seuil de 1 % est de 2 M€", "La perte attendue sur un jour est de 2 M€"], c: 1, e: "La VaR est un quantile : elle borne la perte avec une probabilité de 99 %, mais ne dit rien de son ampleur au-delà. La perte moyenne dans la queue correspond à l'Expected Shortfall." },
+    { q: "Sous l'hypothèse de rendements i.i.d., comment passer d'une VaR 1 jour à une VaR 10 jours ?", o: ["Multiplier par 10", "Multiplier par √10", "Multiplier par ln(10)", "Multiplier par 10/252"], c: 1, e: "La variance croît linéairement avec le temps pour des rendements indépendants ; l'écart-type, donc la VaR, croît comme la racine carrée de l'horizon." },
+    { q: "Pourquoi la FRTB remplace-t-elle la VaR 99 % par l'ES 97,5 % ?", o: ["L'ES est plus simple à calculer", "L'ES capture la sévérité des pertes extrêmes et est sous-additive", "L'ES produit toujours moins de capital", "L'ES ne nécessite pas de backtesting"], c: 1, e: "L'ES mesure la perte moyenne dans la queue et respecte la sous-additivité (mesure cohérente). Sous loi normale, l'ES 97,5 % est proche de la VaR 99 %, d'où le choix du niveau." },
+    { q: "Sur 250 jours, une VaR 99 % a été dépassée 7 fois. Dans quelle zone de Bâle se situe le modèle ?", o: ["Verte", "Jaune", "Rouge", "Aucune : le test n'est pas applicable"], c: 1, e: "La zone jaune couvre 5 à 9 exceptions et entraîne une majoration progressive du multiplicateur de capital. La zone rouge débute à 10 exceptions." },
+    { q: "Dans l'approche standard FRTB, quelle composante capte le risque de défaut soudain des émetteurs ?", o: ["La curvature", "Le RRAO", "La DRC", "Le SES"], c: 2, e: "La Default Risk Charge (DRC) capitalise le risque de défaut (jump-to-default). Le RRAO couvre les risques résiduels des produits exotiques ; le SES concerne les facteurs non modélisables en IMA." }
+  ]
+},
+{
+  id: "credit",
+  num: 2,
+  titre: "Crédit et contrepartie",
+  accroche: "Des paramètres PD/LGD/EAD à la formule IRB, puis du risque de contrepartie aux ajustements xVA.",
+  couleur: "#7a3e1d",
+  calcs: ["irb", "cva"],
+  lecons: [
+  {
+    id: "m2-l1",
+    titre: "Paramètres de risque et approche IRB",
+    duree: 30,
+    objectifs: ["Définir PD, LGD, EAD et M", "Distinguer perte attendue et perte inattendue", "Lire la formule de pondération IRB"],
+    sections: [
+      { h: "Les paramètres de risque", html: `
+        <ul>
+          <li><strong>PD</strong> (Probability of Default) : probabilité de défaut à un an de l'emprunteur ;</li>
+          <li><strong>LGD</strong> (Loss Given Default) : part de l'exposition perdue en cas de défaut, après recouvrements et sûretés ;</li>
+          <li><strong>EAD</strong> (Exposure at Default) : exposition au moment du défaut, y compris la part tirée des engagements hors bilan (via un facteur de conversion, CCF) ;</li>
+          <li><strong>M</strong> (Maturité effective) : plus la maturité est longue, plus le risque de migration de notation est élevé.</li>
+        </ul>` },
+      { h: "Perte attendue et perte inattendue", html: `
+        <div class="f">EL = PD × LGD × EAD</div>
+        <p>La <strong>perte attendue</strong> (EL) est un coût du métier : elle doit être couverte par la tarification et les provisions (IFRS 9). Les <strong>fonds propres</strong> couvrent la <strong>perte inattendue</strong> (UL), c'est-à-dire l'écart entre une perte extrême (quantile 99,9 %) et la perte attendue.</p>
+        <p>Exemple : PD 2 %, LGD 45 %, EAD 10 M€ → EL = 0,02 × 0,45 × 10 M€ = 90 000 €.</p>` },
+      { h: "La formule IRB (modèle ASRF de Vasicek)", html: `
+        <p>La pondération IRB repose sur un modèle à un facteur de risque systématique (Asymptotic Single Risk Factor). L'exigence de capital par unité d'EAD vaut :</p>
+        <div class="f">K = [ LGD · N( (G(PD) + √R · G(0,999)) / √(1 − R) ) − PD · LGD ] × (1 + (M − 2,5)·b) / (1 − 1,5·b)</div>
+        <p>où N est la fonction de répartition de la loi normale centrée réduite, G son inverse, R la corrélation d'actifs (de 12 % à 24 % pour les entreprises, décroissante avec la PD) et b l'ajustement de maturité. On obtient ensuite <strong>RWA = K × 12,5 × EAD</strong>.</p>
+        <p>Le calculateur IRB de cette application te permet d'explorer l'effet de chaque paramètre.</p>` },
+      { h: "IRB fondation, IRB avancé et CRR3", html: `
+        <p>En <strong>IRB fondation</strong> (F-IRB), la banque estime seulement la PD ; LGD et CCF sont réglementaires. En <strong>IRB avancé</strong> (A-IRB), elle estime aussi LGD, EAD/CCF et M.</p>
+        <p>CRR3 restreint l'usage des modèles internes : suppression de l'A-IRB pour certaines classes (grandes entreprises, institutions financières), <strong>planchers de paramètres</strong> (input floors, par exemple PD minimale de 0,05 %) et <strong>output floor</strong>, abordé au module 4.</p>` }
+    ],
+    points: ["EL = PD × LGD × EAD, couverte par les provisions et la tarification", "Les fonds propres couvrent la perte inattendue (quantile 99,9 %)", "RWA = K × 12,5 × EAD"]
+  },
+  {
+    id: "m2-l2",
+    titre: "Risque de contrepartie : expositions, SA-CCR et collatéral",
+    duree: 25,
+    objectifs: ["Définir les métriques d'exposition (EE, EPE, PFE, EEPE)", "Comprendre la structure de SA-CCR", "Mesurer l'effet du netting et du collatéral"],
+    sections: [
+      { h: "Spécificité du risque de contrepartie", html: `
+        <p>Sur un dérivé, l'exposition est <strong>bilatérale et aléatoire</strong> : elle dépend de la valeur de marché future du contrat, positive ou négative. On ne perd que si la contrepartie fait défaut alors que la valeur du contrat est positive pour soi.</p>
+        <table class="t"><thead><tr><th>Métrique</th><th>Définition</th></tr></thead><tbody>
+          <tr><td><strong>EE(t)</strong></td><td>Exposition attendue : moyenne de max(V<sub>t</sub>, 0) à la date t</td></tr>
+          <tr><td><strong>PFE(t)</strong></td><td>Exposition potentielle future : quantile élevé (95 % ou 99 %) de l'exposition</td></tr>
+          <tr><td><strong>EPE</strong></td><td>Moyenne temporelle de l'EE sur un horizon</td></tr>
+          <tr><td><strong>EEPE</strong></td><td>Moyenne de l'EE « effective » (non décroissante) sur la première année ; base de l'approche modèle interne (IMM), avec EAD = α × EEPE</td></tr>
+        </tbody></table>` },
+      { h: "L'approche standard SA-CCR", html: `
+        <div class="f">EAD = α × (RC + PFE), avec α = 1,4</div>
+        <ul>
+          <li><strong>RC</strong> (Replacement Cost) : coût de remplacement actuel, net du collatéral ; pour un ensemble non margé, RC = max(V − C, 0) ;</li>
+          <li><strong>PFE</strong> = multiplicateur × AddOn agrégé. Les add-ons sont calculés par classe d'actifs (taux, change, crédit, actions, matières premières) et par ensemble de couverture ; le multiplicateur reconnaît partiellement la sur-collatéralisation ou une valeur négative du portefeuille.</li>
+        </ul>
+        <p>SA-CCR a remplacé la méthode de l'exposition courante (CEM) et la méthode standard (SM) dans l'UE depuis CRR2.</p>` },
+      { h: "Netting et collatéral", html: `
+        <p>Un <strong>accord de compensation</strong> (ISDA Master Agreement) permet de raisonner sur la valeur nette du portefeuille, et non contrat par contrat. Le <strong>CSA</strong> (Credit Support Annex) organise les échanges de collatéral :</p>
+        <ul>
+          <li><strong>Marge de variation</strong> (VM) : suit la valeur de marché ; paramétrée par le seuil (threshold), le montant minimal de transfert (MTA) et les décotes ;</li>
+          <li><strong>Marge initiale</strong> (IM) : couvre la variation potentielle de valeur pendant la période de liquidation ; obligatoire pour les dérivés non compensés centralement des grandes contreparties (règlement EMIR) ;</li>
+          <li><strong>MPOR</strong> (Margin Period of Risk) : période entre le dernier échange de collatéral réussi et la clôture ou le remplacement des positions après défaut (10 jours minimum par défaut pour les dérivés bilatéraux margés).</li>
+        </ul>` }
+    ],
+    points: ["Le risque de contrepartie est bilatéral et dépend de la valeur future", "SA-CCR : EAD = 1,4 × (RC + PFE)", "Le collatéral ne supprime pas l'exposition pendant la MPOR"]
+  },
+  {
+    id: "m2-l3",
+    titre: "Les ajustements de valorisation xVA",
+    duree: 25,
+    objectifs: ["Calculer une CVA simplifiée", "Distinguer CVA, DVA, FVA, MVA et KVA", "Connaître le cadre de capital CVA sous CRR3"],
+    sections: [
+      { h: "La CVA", html: `
+        <p>La <strong>CVA</strong> (Credit Valuation Adjustment) est la valeur de marché du risque de défaut de la contrepartie. Elle diminue la juste valeur du portefeuille de dérivés :</p>
+        <div class="f">CVA ≈ LGD × Σ<sub>i</sub> EE(t<sub>i</sub>) × DF(t<sub>i</sub>) × [ S(t<sub>i−1</sub>) − S(t<sub>i</sub>) ]</div>
+        <p>où S(t) est la probabilité de survie de la contrepartie, souvent extraite du spread de CDS par l'approximation λ ≈ spread / LGD, avec S(t) = e<sup>−λt</sup>, et DF le facteur d'actualisation.</p>
+        <p>La CVA augmente avec l'exposition attendue, la maturité et l'élargissement du spread de crédit de la contrepartie.</p>` },
+      { h: "La famille xVA", html: `
+        <table class="t"><thead><tr><th>Ajustement</th><th>Ce qu'il mesure</th></tr></thead><tbody>
+          <tr><td><strong>DVA</strong></td><td>Symétrique de la CVA : bénéfice lié à son propre risque de défaut (exposition négative)</td></tr>
+          <tr><td><strong>FVA</strong></td><td>Coût (ou bénéfice) du financement des positions non collatéralisées</td></tr>
+          <tr><td><strong>MVA</strong></td><td>Coût de financement de la marge initiale déposée</td></tr>
+          <tr><td><strong>KVA</strong></td><td>Coût du capital réglementaire immobilisé sur la durée de vie de l'opération</td></tr>
+          <tr><td><strong>ColVA</strong></td><td>Effets des clauses de collatéral (taux de rémunération, options de choix du collatéral)</td></tr>
+        </tbody></table>
+        <p>Ces ajustements sont généralement pilotés par un <strong>desk xVA</strong> centralisé qui facture leur coût aux desks commerciaux.</p>` },
+      { h: "Le capital pour risque de CVA", html: `
+        <p>Pendant la crise de 2008, une part importante des pertes sur dérivés provenait des <strong>variations de CVA</strong> (dégradation du crédit des contreparties) et non des défauts eux-mêmes. Bâle III a donc introduit une exigence de fonds propres dédiée.</p>
+        <p>Depuis CRR3, deux approches coexistent : l'approche de base <strong>BA-CVA</strong> (réduite ou complète, cette dernière reconnaissant les couvertures) et l'approche standard <strong>SA-CVA</strong>, fondée sur les sensibilités de la CVA comptable et soumise à approbation. L'approche par modèles internes n'est plus autorisée pour le risque de CVA.</p>` }
+    ],
+    points: ["CVA ≈ LGD × Σ EE × DF × PD marginale", "DVA, FVA, MVA, KVA complètent la valorisation", "CRR3 : BA-CVA ou SA-CVA, plus de modèles internes"]
+  }],
+  quiz: [
+    { q: "PD = 2 %, LGD = 45 %, EAD = 10 M€. Quelle est la perte attendue ?", o: ["9 000 €", "90 000 €", "450 000 €", "900 000 €"], c: 1, e: "EL = 0,02 × 0,45 × 10 000 000 = 90 000 €." },
+    { q: "En approche IRB fondation, la banque estime elle-même :", o: ["La PD uniquement", "La PD et la LGD", "La LGD et l'EAD", "Tous les paramètres"], c: 0, e: "En F-IRB, seule la PD est estimée en interne ; LGD et CCF sont fixés par la réglementation. L'A-IRB étend l'estimation à la LGD, à l'EAD et à la maturité." },
+    { q: "Dans SA-CCR, quelle est la valeur du facteur α ?", o: ["1,0", "1,25", "1,4", "1,5"], c: 2, e: "EAD = α × (RC + PFE) avec α = 1,4, valeur reprise de l'approche modèle interne." },
+    { q: "La MPOR (Margin Period of Risk) désigne :", o: ["La fréquence des appels de marge prévue au CSA", "La période entre le dernier échange de collatéral réussi et la clôture des positions après défaut", "La maturité résiduelle moyenne du portefeuille", "Le délai de règlement-livraison des titres remis en collatéral"], c: 1, e: "Pendant la MPOR, l'exposition n'est plus couverte par de nouveaux appels de marge : c'est la période de risque résiduel malgré le collatéral." },
+    { q: "Toutes choses égales par ailleurs, la CVA augmente lorsque :", o: ["Le spread de CDS de la contrepartie se resserre", "Le spread de CDS de la contrepartie s'élargit", "Le seuil du CSA est réduit à zéro", "La maturité du portefeuille diminue"], c: 1, e: "Un spread plus large implique une probabilité de défaut plus élevée, donc une CVA plus importante. Un seuil nul et une maturité plus courte réduisent au contraire l'exposition." }
+  ]
+},
+{
+  id: "alm",
+  num: 3,
+  titre: "ALM et liquidité",
+  accroche: "Piloter le risque de taux du portefeuille bancaire (IRRBB) et le risque de liquidité (LCR, NSFR).",
+  couleur: "#2e6b4f",
+  calcs: ["eve", "lcr"],
+  lecons: [
+  {
+    id: "m3-l1",
+    titre: "Le risque de taux du portefeuille bancaire (IRRBB)",
+    duree: 25,
+    objectifs: ["Identifier les sources de l'IRRBB", "Distinguer approche EVE et approche NII", "Connaître les scénarios et les tests prudentiels (SOT)"],
+    sections: [
+      { h: "Sources du risque de taux", html: `
+        <ul>
+          <li><strong>Risque de gap</strong> (ou de révision) : décalage des dates de refixation entre actifs et passifs ; c'est le risque de la transformation ;</li>
+          <li><strong>Risque de base</strong> : actifs et passifs indexés sur des références différentes (€STR, Euribor 3 mois, taux réglementés) ;</li>
+          <li><strong>Risque d'option</strong> : options explicites (caps, floors) ou comportementales (remboursements anticipés de crédits immobiliers, retraits de dépôts à vue).</li>
+        </ul>` },
+      { h: "Deux angles complémentaires : EVE et NII", html: `
+        <table class="t"><thead><tr><th></th><th>EVE (Economic Value of Equity)</th><th>NII (Net Interest Income)</th></tr></thead><tbody>
+          <tr><td>Question</td><td>Que vaut le bilan si les taux bougent ?</td><td>Que devient la marge d'intérêts ?</td></tr>
+          <tr><td>Horizon</td><td>Durée de vie totale des flux</td><td>Généralement 1 à 3 ans</td></tr>
+          <tr><td>Nature</td><td>Valeur actuelle des flux (vision liquidative)</td><td>Résultat comptable (vision de continuité)</td></tr>
+        </tbody></table>
+        <p>Les deux mesures n'ont pas nécessairement le même signe : une hausse des taux peut réduire l'EVE d'une banque de transformation tout en améliorant sa marge à court terme.</p>` },
+      { h: "Scénarios et tests prudentiels (SOT)", html: `
+        <p>Six scénarios de choc du Comité de Bâle sont utilisés pour l'EVE : <strong>hausse parallèle, baisse parallèle, pentification, aplatissement, hausse des taux courts, baisse des taux courts</strong>. Pour l'euro, l'amplitude est de 200 pb pour le choc parallèle, 250 pb pour les taux courts et 100 pb pour les taux longs.</p>
+        <p>Dans l'UE, les normes techniques de l'EBA définissent deux <strong>tests prudentiels de valeurs aberrantes</strong> (SOT) :</p>
+        <ul>
+          <li><strong>SOT EVE</strong> : baisse de l'EVE supérieure à <strong>15 % des fonds propres Tier 1</strong> sous l'un des six scénarios ;</li>
+          <li><strong>SOT NII</strong> : baisse importante du NII à un an sous les scénarios parallèles, seuil fixé à <strong>5 % du Tier 1</strong>.</li>
+        </ul>
+        <p>Le dépassement déclenche un examen dans le cadre du SREP et peut conduire à des mesures prudentielles.</p>` },
+      { h: "Les dépôts sans échéance (NMD)", html: `
+        <p>Les dépôts à vue n'ont pas d'échéance contractuelle, mais une part est stable et peu sensible aux taux. Leur <strong>modélisation comportementale</strong> (part stable, écoulement, élasticité de la rémunération) est l'hypothèse la plus structurante de l'ALM. Le régulateur l'encadre, notamment en plafonnant la maturité moyenne de révision des dépôts modélisés (5 ans dans le cadre de l'EBA).</p>` }
+    ],
+    points: ["Trois sources : gap, base, option", "EVE = vision valeur ; NII = vision marge", "SOT : EVE −15 % du Tier 1, NII −5 % du Tier 1"]
+  },
+  {
+    id: "m3-l2",
+    titre: "Gaps de taux et duration",
+    duree: 20,
+    objectifs: ["Construire et lire un gap de taux", "Estimer la sensibilité de l'EVE par la duration", "Mettre en place une couverture"],
+    sections: [
+      { h: "Le gap (impasse) de taux", html: `
+        <p>Le gap de taux répartit actifs et passifs par <strong>date de refixation</strong> (et non par échéance de liquidité) dans des tranches de maturité. Pour chaque tranche :</p>
+        <div class="f">Gap(tranche) = Actifs à taux fixe − Passifs à taux fixe</div>
+        <p>Un gap positif (excédent d'actifs à taux fixe) expose à une <strong>hausse</strong> des taux en valeur ; un gap négatif expose à une baisse. L'impact sur la marge d'une tranche courte s'approxime par ΔNII ≈ Gap<sub>taux variable</sub> × Δr × durée restante.</p>` },
+      { h: "Duration et sensibilité de l'EVE", html: `
+        <p>La <strong>duration modifiée</strong> D mesure la sensibilité relative d'une valeur à un mouvement parallèle de taux : ΔV/V ≈ −D × Δy. Appliquée au bilan :</p>
+        <div class="f">ΔEVE ≈ −( D<sub>A</sub> × A − D<sub>P</sub> × P ) × Δy</div>
+        <p>Exemple : A = 1 000 M€ de duration 4,5 ; P = 920 M€ de duration 1,8 ; choc +200 pb → ΔEVE ≈ −(4 500 − 1 656) × 0,02 ≈ −56,9 M€. Avec un Tier 1 de 80 M€, la baisse représente 71 % du Tier 1, très au-delà du seuil SOT de 15 %.</p>
+        <p class="note">La duration reste une approximation au premier ordre : la convexité et les options comportementales doivent être prises en compte pour les chocs importants.</p>` },
+      { h: "Couvrir le risque de taux", html: `
+        <p>L'instrument principal est le <strong>swap de taux</strong> : une banque dont les actifs sont longs à taux fixe paie le fixe et reçoit le variable pour réduire sa duration d'actif. On le documente souvent en <strong>macro-couverture</strong> de juste valeur (carve-out IAS 39 en Europe). Caps et floors couvrent le risque optionnel.</p>
+        <p>La gouvernance repose sur des <strong>limites</strong> de sensibilité (EVE, NII), un <strong>comité ALM</strong> (ALCO) et des tests réguliers des hypothèses comportementales.</p>` }
+    ],
+    points: ["Le gap se construit par date de refixation", "ΔEVE ≈ −(D_A·A − D_P·P)·Δy", "Swaps payeurs de fixe pour réduire une exposition à la hausse des taux"]
+  },
+  {
+    id: "m3-l3",
+    titre: "Le risque de liquidité : LCR, NSFR et ILAAP",
+    duree: 25,
+    objectifs: ["Calculer un LCR", "Comprendre le NSFR", "Situer l'ILAAP et le plan de financement d'urgence"],
+    sections: [
+      { h: "Le ratio de liquidité à court terme (LCR)", html: `
+        <div class="f">LCR = Stock d'actifs liquides de haute qualité (HQLA) / Sorties nettes de trésorerie sur 30 jours de stress ≥ 100 %</div>
+        <p>Les HQLA sont classés en trois niveaux :</p>
+        <ul>
+          <li><strong>Niveau 1</strong> : réserves en banque centrale, titres souverains de qualité, sans décote ni plafond ;</li>
+          <li><strong>Niveau 2A</strong> : décote de 15 % (par exemple certaines obligations sécurisées) ;</li>
+          <li><strong>Niveau 2B</strong> : décotes de 25 % à 50 % (titrisations éligibles, obligations d'entreprises, actions).</li>
+        </ul>
+        <p>Les actifs de niveau 2 sont plafonnés à 40 % du stock (le niveau 2B à 15 %). Les entrées de trésorerie sont plafonnées à <strong>75 % des sorties</strong>, sauf exemptions.</p>` },
+      { h: "Le ratio de financement stable net (NSFR)", html: `
+        <div class="f">NSFR = Financement stable disponible (ASF) / Financement stable requis (RSF) ≥ 100 %</div>
+        <p>Le NSFR, horizon un an, limite la transformation de maturité. Chaque passif reçoit un facteur ASF selon sa stabilité (100 % pour les fonds propres, 90 à 95 % pour les dépôts de détail stables) ; chaque actif reçoit un facteur RSF selon sa liquidité (0 % pour les réserves en banque centrale, 65 % pour les prêts immobiliers résidentiels éligibles, 85 % pour la plupart des autres prêts). Il s'applique dans l'UE depuis juin 2021 (CRR2).</p>` },
+      { h: "ILAAP, stress tests et plan d'urgence", html: `
+        <p>Les ratios réglementaires ne suffisent pas. L'<strong>ILAAP</strong> (Internal Liquidity Adequacy Assessment Process) est le processus interne par lequel la banque démontre au superviseur que sa liquidité et son financement sont adéquats : appétit pour le risque de liquidité, stress tests internes (idiosyncratiques, systémiques, combinés), horizon de survie, coussin de liquidité, prix de transfert interne de la liquidité (FTP).</p>
+        <p>Le <strong>plan de financement d'urgence</strong> (CFP) définit les indicateurs d'alerte, la gouvernance de crise et les mesures mobilisables (mise en pension, mobilisation de créances auprès de la banque centrale, cession d'actifs).</p>` }
+    ],
+    points: ["LCR = HQLA / sorties nettes 30 jours ≥ 100 %", "Entrées plafonnées à 75 % des sorties ; niveau 2 ≤ 40 %, 2B ≤ 15 %", "NSFR = ASF / RSF ≥ 100 % sur un an"]
+  }],
+  quiz: [
+    { q: "Une banque finance des crédits immobiliers longs à taux fixe par des ressources courtes. Une hausse parallèle des taux :", o: ["Augmente son EVE", "Réduit son EVE", "N'a aucun effet sur l'EVE", "N'affecte que son LCR"], c: 1, e: "La duration de l'actif étant supérieure à celle du passif, la valeur des actifs baisse davantage que celle des passifs : l'EVE diminue." },
+    { q: "Selon les normes de l'EBA, le SOT EVE est déclenché lorsque l'EVE baisse de plus de :", o: ["5 % du Tier 1", "10 % des fonds propres totaux", "15 % du Tier 1", "20 % du CET1"], c: 2, e: "Le seuil SOT EVE est de 15 % du Tier 1 (l'ancien critère de 20 % des fonds propres a été abandonné). Le SOT NII est fixé à 5 % du Tier 1." },
+    { q: "Quel est l'horizon de stress du LCR ?", o: ["7 jours", "30 jours calendaires", "90 jours", "1 an"], c: 1, e: "Le LCR mesure la capacité à faire face à 30 jours calendaires de stress de liquidité. L'horizon d'un an correspond au NSFR." },
+    { q: "Dans le LCR, les entrées de trésorerie sont en principe plafonnées à :", o: ["50 % des sorties", "75 % des sorties", "100 % des sorties", "Aucun plafond"], c: 1, e: "Le plafond de 75 % garantit qu'une banque détient toujours un stock minimal de HQLA couvrant au moins 25 % des sorties." },
+    { q: "Le NSFR rapporte :", o: ["Les HQLA aux sorties de trésorerie", "Le financement stable disponible au financement stable requis", "Les fonds propres Tier 1 à l'exposition totale", "Les dépôts aux crédits"], c: 1, e: "NSFR = ASF / RSF ≥ 100 %. Le rapport Tier 1 / exposition totale est le ratio de levier ; le rapport crédits / dépôts est un indicateur de gestion, non un ratio réglementaire." }
+  ]
+},
+{
+  id: "regl",
+  num: 4,
+  titre: "Réglementation et gouvernance",
+  accroche: "Bâle III et CRR3, reporting et BCBS 239, appétit pour le risque et organisation de la fonction risques.",
+  couleur: "#5a3d7a",
+  calcs: [],
+  lecons: [
+  {
+    id: "m4-l1",
+    titre: "Bâle III et le paquet bancaire CRR3/CRD6",
+    duree: 30,
+    objectifs: ["Connaître les trois piliers et les exigences de fonds propres", "Comprendre l'output floor", "Identifier les principaux changements de CRR3"],
+    sections: [
+      { h: "Les trois piliers", html: `
+        <ul>
+          <li><strong>Pilier 1</strong> : exigences minimales de fonds propres pour les risques de crédit, de marché, opérationnel et de CVA ;</li>
+          <li><strong>Pilier 2</strong> : processus de surveillance prudentielle (SREP), ICAAP/ILAAP, exigences additionnelles (P2R) et recommandations (P2G) ;</li>
+          <li><strong>Pilier 3</strong> : discipline de marché par la publication d'informations normalisées.</li>
+        </ul>` },
+      { h: "Ratios et coussins", html: `
+        <table class="t"><thead><tr><th>Exigence (en % des RWA)</th><th>Niveau</th></tr></thead><tbody>
+          <tr><td>CET1 minimum (Pilier 1)</td><td>4,5 %</td></tr>
+          <tr><td>Tier 1 minimum</td><td>6 %</td></tr>
+          <tr><td>Fonds propres totaux minimum</td><td>8 %</td></tr>
+          <tr><td>Coussin de conservation (CET1)</td><td>2,5 %</td></tr>
+          <tr><td>Coussin contracyclique</td><td>0 à 2,5 % (fixé par chaque pays)</td></tr>
+          <tr><td>Coussins systémiques (G-SII, O-SII, risque systémique)</td><td>Selon l'établissement</td></tr>
+        </tbody></table>
+        <p>S'y ajoutent le <strong>ratio de levier</strong> (Tier 1 / exposition totale ≥ 3 %, avec un coussin supplémentaire pour les G-SII), les ratios de liquidité (module 3) et, en résolution, les exigences MREL/TLAC.</p>` },
+      { h: "L'output floor", html: `
+        <p>L'output floor limite l'avantage procuré par les modèles internes : les RWA totaux ne peuvent descendre sous <strong>72,5 % des RWA calculés en approches standard</strong>.</p>
+        <div class="f">RWA = max( RWA<sub>modèles internes</sub> ; x × RWA<sub>standard</sub> )</div>
+        <p>Dans l'UE, le facteur x monte progressivement : <strong>50 % en 2025</strong>, 55 % en 2026, 60 % en 2027, 65 % en 2028, 70 % en 2029 et <strong>72,5 % à partir de 2030</strong>. Des dispositions transitoires (article 465 du CRR) atténuent l'impact, notamment un plafonnement de la hausse à 125 % des RWA non planchers jusqu'à fin 2029.</p>` },
+      { h: "Autres changements majeurs de CRR3", html: `
+        <ul>
+          <li><strong>Risque de crédit</strong> : approche standard plus granulaire (immobilier, notations externes, financements spécialisés) et restrictions des modèles internes ;</li>
+          <li><strong>Risque opérationnel</strong> : une approche standard unique fondée sur l'indicateur d'activité (Business Indicator Component), en remplacement des approches antérieures, y compris l'AMA ;</li>
+          <li><strong>CVA</strong> : approches BA-CVA et SA-CVA (module 2) ;</li>
+          <li><strong>Risque de marché</strong> : FRTB, dont l'application est reportée au 1<sup>er</sup> janvier 2027 (module 1) ;</li>
+          <li><strong>ESG</strong> : intégration des risques environnementaux, sociaux et de gouvernance dans la gestion des risques et les publications.</li>
+        </ul>` }
+    ],
+    points: ["CET1 4,5 % ; Tier 1 6 % ; total 8 % ; conservation 2,5 %", "Output floor : 50 % en 2025, 72,5 % en 2030", "Levier ≥ 3 % du Tier 1"]
+  },
+  {
+    id: "m4-l2",
+    titre: "Reporting réglementaire et BCBS 239",
+    duree: 20,
+    objectifs: ["Situer COREP, FINREP et le Pilier 3", "Connaître les principes BCBS 239", "Identifier les attentes actuelles du superviseur"],
+    sections: [
+      { h: "Le reporting prudentiel", html: `
+        <ul>
+          <li><strong>COREP</strong> (Common Reporting) : fonds propres, exigences par risque, grands risques, levier, liquidité (LCR, NSFR, ALMM) ;</li>
+          <li><strong>FINREP</strong> (Financial Reporting) : informations financières détaillées selon les normes comptables ;</li>
+          <li><strong>Pilier 3</strong> : publications au marché, harmonisées par les normes techniques de l'EBA.</li>
+        </ul>
+        <p>Les formats et la taxonomie sont définis par l'EBA (cadre de reporting, format XBRL), et transmis en France à l'ACPR ou, pour les grandes banques de la zone euro, via le mécanisme de supervision unique (MSU) de la BCE.</p>` },
+      { h: "BCBS 239 : 14 principes", html: `
+        <p>Publiés par le Comité de Bâle en janvier 2013, les principes pour l'agrégation efficace des données de risque et le reporting des risques (« RDARR ») sont regroupés en quatre catégories :</p>
+        <table class="t"><thead><tr><th>Catégorie</th><th>Principes</th></tr></thead><tbody>
+          <tr><td>Gouvernance et infrastructure</td><td>1. Gouvernance ; 2. Architecture des données et infrastructure informatique</td></tr>
+          <tr><td>Capacités d'agrégation des données</td><td>3. Exactitude et intégrité ; 4. Exhaustivité ; 5. Rapidité ; 6. Adaptabilité</td></tr>
+          <tr><td>Pratiques de reporting</td><td>7. Exactitude ; 8. Exhaustivité ; 9. Clarté et utilité ; 10. Fréquence ; 11. Diffusion</td></tr>
+          <tr><td>Surveillance prudentielle</td><td>12. Revue ; 13. Mesures correctrices ; 14. Coopération entre autorités</td></tr>
+        </tbody></table>` },
+      { h: "Les attentes du superviseur", html: `
+        <p>La mise en conformité reste incomplète dans de nombreuses banques. La BCE a publié en 2024 un guide sur l'agrégation des données de risque et le reporting, qui insiste sur la <strong>responsabilité de l'organe de direction</strong>, le périmètre (rapports de gestion, réglementaires et financiers clés), le <strong>lignage des données</strong> de bout en bout, la qualité des données mesurée par des indicateurs et la capacité à produire des rapports en situation de crise.</p>
+        <p>Concrètement, cela se traduit par des dictionnaires de données, des contrôles de réconciliation (risques, finance, comptabilité), des propriétaires de données identifiés et des tableaux de bord de qualité.</p>` }
+    ],
+    points: ["COREP, FINREP, Pilier 3 : formats harmonisés par l'EBA", "BCBS 239 : 14 principes en 4 catégories", "Priorités : gouvernance, lignage, qualité des données"]
+  },
+  {
+    id: "m4-l3",
+    titre: "Appétit pour le risque et gouvernance",
+    duree: 20,
+    objectifs: ["Construire un dispositif d'appétit pour le risque", "Comprendre le modèle des trois lignes", "Articuler ICAAP, stress tests et SREP"],
+    sections: [
+      { h: "Le cadre d'appétit pour le risque (RAF)", html: `
+        <p>Le <strong>RAF</strong> (Risk Appetite Framework) relie la stratégie au niveau de risque accepté. On distingue :</p>
+        <ul>
+          <li>la <strong>capacité</strong> de risque : le maximum supportable compte tenu des fonds propres, de la liquidité et des contraintes réglementaires ;</li>
+          <li>l'<strong>appétit</strong> : le niveau de risque que la banque choisit de prendre pour atteindre ses objectifs ;</li>
+          <li>la <strong>tolérance</strong> : l'écart acceptable autour de l'appétit, souvent matérialisé par des seuils d'alerte ;</li>
+          <li>les <strong>limites</strong> : la déclinaison opérationnelle par métier, desk, contrepartie ou secteur.</li>
+        </ul>
+        <p>La <strong>déclaration d'appétit</strong> (RAS), validée par le conseil d'administration, combine indicateurs quantitatifs (CET1, LCR, VaR, concentration) et énoncés qualitatifs (risque de réputation, conformité).</p>` },
+      { h: "Le modèle des trois lignes", html: `
+        <ol>
+          <li><strong>Première ligne</strong> : les métiers, propriétaires des risques qu'ils prennent, avec leurs contrôles permanents de premier niveau ;</li>
+          <li><strong>Deuxième ligne</strong> : la fonction gestion des risques (sous l'autorité du CRO) et la conformité, qui définissent le cadre, mesurent, challengent et contrôlent de manière indépendante ;</li>
+          <li><strong>Troisième ligne</strong> : l'audit interne, qui évalue périodiquement l'efficacité de l'ensemble du dispositif.</li>
+        </ol>
+        <p>Le <strong>CRO</strong> doit disposer d'une indépendance réelle, d'un accès direct au conseil et au comité des risques, et ne peut être révoqué sans information préalable de l'organe de surveillance.</p>` },
+      { h: "ICAAP, stress tests et SREP", html: `
+        <p>L'<strong>ICAAP</strong> est l'évaluation interne de l'adéquation du capital, selon une perspective <strong>normative</strong> (respect des exigences réglementaires sur plusieurs années) et une perspective <strong>économique</strong> (couverture de tous les risques matériels par le capital interne).</p>
+        <p>Les <strong>stress tests</strong> de l'EBA et de la BCE projettent bilan, résultat et ratios de solvabilité sur trois ans sous un scénario central et un scénario adverse. Leurs résultats alimentent le <strong>SREP</strong>, au terme duquel le superviseur fixe notamment l'exigence de Pilier 2 (P2R) et la recommandation (P2G).</p>` }
+    ],
+    points: ["Capacité ≥ tolérance ≥ appétit → limites", "Trois lignes : métiers, risques et conformité, audit interne", "ICAAP normatif et économique ; stress tests et SREP"]
+  }],
+  quiz: [
+    { q: "Quelle est l'exigence minimale de CET1 au titre du Pilier 1 ?", o: ["2,5 % des RWA", "4,5 % des RWA", "6 % des RWA", "8 % des RWA"], c: 1, e: "4,5 % pour le CET1, 6 % pour le Tier 1 et 8 % pour les fonds propres totaux, auxquels s'ajoutent les coussins (dont la conservation à 2,5 %)." },
+    { q: "Dans l'UE, l'output floor atteint son niveau définitif de 72,5 % :", o: ["Dès le 1er janvier 2025", "Le 1er janvier 2027", "Le 1er janvier 2030", "Il n'est pas appliqué dans l'UE"], c: 2, e: "Le facteur progresse de 50 % (2025) à 72,5 % (2030), par paliers annuels de 5 points jusqu'à 70 % en 2029." },
+    { q: "BCBS 239 porte sur :", o: ["Le traitement prudentiel des crypto-actifs", "L'agrégation des données de risque et le reporting des risques", "Les exigences de marge pour les dérivés non compensés", "Le risque de taux du portefeuille bancaire"], c: 1, e: "Les 14 principes BCBS 239 (2013) visent la gouvernance, l'infrastructure, l'agrégation des données de risque et la qualité du reporting." },
+    { q: "Dans le modèle des trois lignes, la deuxième ligne correspond à :", o: ["Les métiers et leurs contrôles de premier niveau", "La fonction gestion des risques et la conformité", "L'audit interne", "Le commissaire aux comptes"], c: 1, e: "La deuxième ligne définit le cadre et contrôle de façon indépendante. L'audit interne est la troisième ligne ; les commissaires aux comptes sont externes au dispositif." },
+    { q: "Quel est le niveau minimal du ratio de levier au titre du Pilier 1 ?", o: ["1 %", "3 %", "5 %", "8 %"], c: 1, e: "Le ratio de levier (Tier 1 / exposition totale) doit être d'au moins 3 %, avec un coussin supplémentaire pour les établissements d'importance systémique mondiale." }
+  ]
+}];
+
+window.CALCS = {
+  var: { titre: "VaR et Expected Shortfall", module: "marche", desc: "VaR paramétrique et historique, Expected Shortfall et règle de la racine du temps." },
+  irb: { titre: "Formule IRB (entreprises)", module: "credit", desc: "Pondération en risque, exigence de capital et perte attendue selon la formule de Bâle." },
+  cva: { titre: "CVA simplifiée", module: "credit", desc: "CVA unilatérale à partir d'un profil d'exposition attendue et d'un spread de CDS." },
+  eve: { titre: "Sensibilité de l'EVE", module: "alm", desc: "Approximation par la duration et comparaison au seuil SOT de 15 % du Tier 1." },
+  lcr: { titre: "Ratio LCR", module: "alm", desc: "Stock de HQLA après décotes et plafonds, sorties nettes et ratio LCR." }
+};
+
+</script>
+<script>
+/* Modules complémentaires — RiskAcadémie */
+window.MODULES.push(
+{
+  id: "oprisk",
+  num: 5,
+  titre: "Risque opérationnel",
+  accroche: "Identifier, mesurer et maîtriser les pertes liées aux processus, aux personnes, aux systèmes et aux événements externes, jusqu'à la résilience numérique (DORA).",
+  couleur: "#8a4b67",
+  calcs: ["opr"],
+  lecons: [
+  {
+    id: "m5-l1",
+    titre: "Définition, taxonomie et dispositif de gestion",
+    duree: 25,
+    objectifs: ["Définir le risque opérationnel et ses frontières", "Connaître la taxonomie bâloise des événements de perte", "Décrire les outils du dispositif : collecte des pertes, RCSA, KRI, scénarios"],
+    sections: [
+      { h: "Définition", html: `
+        <p>Le Comité de Bâle définit le risque opérationnel comme le <strong>risque de pertes résultant de processus internes, de personnes ou de systèmes inadéquats ou défaillants, ou d'événements extérieurs</strong>. Cette définition inclut le risque juridique, mais exclut le risque stratégique et le risque de réputation.</p>
+        <p>Contrairement aux risques de crédit ou de marché, le risque opérationnel n'est pas pris volontairement en échange d'une rémunération : il est inhérent à toute activité. Ses pertes sont caractérisées par une distribution très asymétrique, avec de nombreux petits incidents et quelques événements extrêmes (fraudes de trader, amendes pour blanchiment, pannes informatiques majeures).</p>` },
+      { h: "La taxonomie bâloise (niveau 1)", html: `
+        <table class="t"><thead><tr><th>Catégorie d'événement</th><th>Exemples</th></tr></thead><tbody>
+          <tr><td>Fraude interne</td><td>Positions non autorisées, détournement par un salarié</td></tr>
+          <tr><td>Fraude externe</td><td>Vol, falsification, piratage, fraude au président</td></tr>
+          <tr><td>Pratiques en matière d'emploi et sécurité au travail</td><td>Litiges prud'homaux, discrimination, accidents</td></tr>
+          <tr><td>Clients, produits et pratiques commerciales</td><td>Défaut de conseil, ventes abusives, manquements LCB-FT, sanctions</td></tr>
+          <tr><td>Dommages aux actifs corporels</td><td>Catastrophes naturelles, incendie, terrorisme</td></tr>
+          <tr><td>Interruption d'activité et défaillance des systèmes</td><td>Panne informatique, coupure de télécommunications</td></tr>
+          <tr><td>Exécution, livraison et gestion des processus</td><td>Erreur de saisie, défaut de règlement-livraison, erreur de reporting</td></tr>
+        </tbody></table>` },
+      { h: "Les outils du dispositif", html: `
+        <ul>
+          <li><strong>Collecte des pertes</strong> : base de données des incidents (montant brut, récupérations, date de survenance, de détection et de comptabilisation), au-delà d'un seuil de collecte ;</li>
+          <li><strong>RCSA</strong> (Risk and Control Self-Assessment) : cartographie des risques par processus, évaluation du risque brut, de l'efficacité des contrôles et du risque résiduel ;</li>
+          <li><strong>KRI</strong> (Key Risk Indicators) : indicateurs avancés avec seuils d'alerte (taux de rotation du personnel, suspens de rapprochement, incidents informatiques, retards de traitement) ;</li>
+          <li><strong>Analyse de scénarios</strong> : estimation à dire d'experts d'événements rares et sévères ;</li>
+          <li><strong>Plans d'action</strong> et suivi des recommandations d'audit ;</li>
+          <li><strong>Assurance</strong> : transfert d'une partie du risque (polices « globale de banque », cyber, responsabilité civile professionnelle).</li>
+        </ul>` }
+    ],
+    points: ["Processus, personnes, systèmes, événements externes ; risque juridique inclus", "Sept catégories bâloises d'événements de perte", "Collecte des pertes, RCSA, KRI et scénarios forment un dispositif cohérent"]
+  },
+  {
+    id: "m5-l2",
+    titre: "Le capital pour risque opérationnel sous CRR3",
+    duree: 20,
+    objectifs: ["Calculer l'indicateur d'activité (BI)", "Appliquer les coefficients marginaux de la BIC", "Comprendre le choix européen ILM = 1"],
+    sections: [
+      { h: "D'une pluralité d'approches à une approche unique", html: `
+        <p>Jusqu'à fin 2024, les banques européennes utilisaient l'approche de l'indicateur de base, l'approche standard ou les approches de mesure avancées (AMA, fondées sur des modèles internes de distribution des pertes). Bâle III finalisé et CRR3 les remplacent, depuis le 1<sup>er</sup> janvier 2025, par une <strong>nouvelle approche standard unique</strong>. Les modèles internes ne sont plus utilisés pour le Pilier 1 ; ils gardent leur intérêt pour l'ICAAP.</p>` },
+      { h: "L'indicateur d'activité (BI)", html: `
+        <div class="f">BI = ILDC + SC + FC (moyennes sur trois ans)</div>
+        <ul>
+          <li><strong>ILDC</strong> (intérêts, locations et dividendes) = min(|produits − charges d'intérêts| ; 2,25 % × actifs productifs) + dividendes ;</li>
+          <li><strong>SC</strong> (services) = max(autres produits ; autres charges d'exploitation) + max(commissions reçues ; commissions versées) ;</li>
+          <li><strong>FC</strong> (financier) = |P&amp;L net du portefeuille de négociation| + |P&amp;L net du portefeuille bancaire|.</li>
+        </ul>` },
+      { h: "La composante BIC et le multiplicateur de pertes", html: `
+        <p>On applique au BI des <strong>coefficients marginaux</strong> croissants, par tranche :</p>
+        <table class="t"><thead><tr><th>Tranche de BI</th><th class="num">Coefficient marginal</th></tr></thead><tbody>
+          <tr><td>Jusqu'à 1 Md€</td><td class="num">12 %</td></tr>
+          <tr><td>De 1 à 30 Md€</td><td class="num">15 %</td></tr>
+          <tr><td>Au-delà de 30 Md€</td><td class="num">18 %</td></tr>
+        </tbody></table>
+        <div class="f">Exigence (ORC) = BIC × ILM ; RWA = ORC × 12,5</div>
+        <p>Le standard de Bâle prévoit un <strong>multiplicateur de pertes internes</strong> (ILM) fondé sur l'historique de pertes à dix ans. Le législateur européen a exercé l'option permettant de fixer l'<strong>ILM à 1 pour toutes les banques</strong> : l'exigence dépend donc uniquement de la taille de l'activité. La qualité de la collecte des pertes reste néanmoins exigée (articles 316 à 322 du CRR) et alimente le Pilier 2.</p>` }
+    ],
+    points: ["Approche standard unique depuis 2025 ; fin des AMA pour le Pilier 1", "BIC : 12 % / 15 % / 18 % par tranche de BI", "UE : ILM = 1, donc ORC = BIC"]
+  },
+  {
+    id: "m5-l3",
+    titre: "Résilience opérationnelle numérique : DORA",
+    duree: 25,
+    objectifs: ["Connaître les cinq piliers de DORA", "Maîtriser le processus de déclaration des incidents majeurs", "Encadrer le risque lié aux prestataires TIC"],
+    sections: [
+      { h: "Le règlement DORA", html: `
+        <p>Le règlement (UE) 2022/2554 sur la résilience opérationnelle numérique (<strong>DORA</strong>) s'applique depuis le <strong>17 janvier 2025</strong> aux banques, entreprises d'investissement, assureurs, établissements de paiement, infrastructures de marché et gestionnaires d'actifs. Il harmonise cinq domaines :</p>
+        <ol>
+          <li>la <strong>gestion du risque lié aux TIC</strong> (cadre, gouvernance, responsabilité de l'organe de direction) ;</li>
+          <li>la <strong>gestion, la classification et la déclaration des incidents</strong> liés aux TIC ;</li>
+          <li>les <strong>tests de résilience</strong>, dont les tests de pénétration fondés sur la menace (TLPT) pour les entités les plus importantes ;</li>
+          <li>la <strong>gestion du risque lié aux prestataires tiers de TIC</strong> ;</li>
+          <li>le <strong>partage d'informations</strong> sur les cybermenaces.</li>
+        </ol>` },
+      { h: "Déclaration des incidents majeurs", html: `
+        <p>Les incidents sont classés selon des critères harmonisés (clients touchés, durée, services critiques, pertes de données, impact géographique et économique). Un incident jugé <strong>majeur</strong> fait l'objet de trois déclarations successives à l'autorité compétente :</p>
+        <table class="t"><thead><tr><th>Étape</th><th>Délai indicatif</th></tr></thead><tbody>
+          <tr><td>Notification initiale</td><td>4 heures après la classification comme majeur, et au plus tard 24 heures après la détection</td></tr>
+          <tr><td>Rapport intermédiaire</td><td>72 heures après la notification initiale</td></tr>
+          <tr><td>Rapport final</td><td>Un mois après le dernier rapport intermédiaire</td></tr>
+        </tbody></table>
+        <p class="note">Vérifie les délais précis dans les normes techniques applicables : ils peuvent être aménagés selon le jour de survenance et la taille de l'entité.</p>` },
+      { h: "Prestataires tiers et registre d'informations", html: `
+        <p>Chaque entité tient un <strong>registre d'informations</strong> recensant tous ses contrats de services TIC, transmis aux autorités (première remise au printemps 2025). Les contrats portant sur des fonctions critiques ou importantes doivent comporter des clauses minimales (localisation des données, niveaux de service, droits d'audit, stratégie de sortie).</p>
+        <p>DORA instaure aussi une <strong>surveillance directe des prestataires TIC critiques</strong> (grands fournisseurs de cloud notamment) par les autorités européennes de surveillance. Pour le risk manager, cela renforce l'analyse du risque de concentration et la préparation des plans de continuité.</p>` }
+    ],
+    points: ["DORA s'applique depuis le 17 janvier 2025", "Incident majeur : notification initiale, rapport intermédiaire, rapport final", "Registre d'informations et surveillance des prestataires TIC critiques"]
+  }],
+  quiz: [
+    { q: "Lequel de ces risques est explicitement exclu de la définition bâloise du risque opérationnel ?", o: ["Le risque juridique", "Le risque de réputation", "Le risque de fraude externe", "Le risque de défaillance des systèmes"], c: 1, e: "La définition inclut le risque juridique mais exclut le risque stratégique et le risque de réputation." },
+    { q: "Une vente abusive de produits financiers à des clients relève de la catégorie :", o: ["Fraude interne", "Exécution, livraison et gestion des processus", "Clients, produits et pratiques commerciales", "Interruption d'activité"], c: 2, e: "Les manquements aux obligations envers les clients (conseil, adéquation, ventes abusives) relèvent de la catégorie « Clients, produits et pratiques commerciales »." },
+    { q: "Une banque a un BI de 5 Md€. Quelle est sa composante BIC ?", o: ["600 M€", "720 M€", "750 M€", "900 M€"], c: 1, e: "BIC = 12 % × 1 Md€ + 15 % × 4 Md€ = 120 + 600 = 720 M€." },
+    { q: "Dans l'UE, le multiplicateur de pertes internes (ILM) est :", o: ["Calculé sur dix ans de pertes pour chaque banque", "Fixé à 1 pour toutes les banques", "Réservé aux banques de plus de 30 Md€ de BI", "Remplacé par un modèle AMA"], c: 1, e: "Le législateur européen a exercé l'option bâloise de fixer l'ILM à 1 : l'exigence repose entièrement sur la BIC." },
+    { q: "Depuis quand le règlement DORA s'applique-t-il ?", o: ["1er janvier 2024", "17 janvier 2025", "1er janvier 2026", "17 janvier 2027"], c: 1, e: "DORA est entré en application le 17 janvier 2025, sans période de transition." }
+  ]
+},
+{
+  id: "climat",
+  num: 6,
+  titre: "Climat et ESG",
+  accroche: "Intégrer les risques climatiques, environnementaux, sociaux et de gouvernance dans la gestion des risques bancaires.",
+  couleur: "#3d6e3a",
+  calcs: ["clim"],
+  lecons: [
+  {
+    id: "m6-l1",
+    titre: "Risques physiques et risques de transition",
+    duree: 20,
+    objectifs: ["Distinguer les canaux de transmission des risques climatiques", "Relier facteurs ESG et risques financiers traditionnels", "Comprendre le principe de double matérialité"],
+    sections: [
+      { h: "Deux familles de facteurs de risque", html: `
+        <table class="t"><thead><tr><th></th><th>Risque physique</th><th>Risque de transition</th></tr></thead><tbody>
+          <tr><td>Origine</td><td>Effets matériels du changement climatique</td><td>Ajustement vers une économie bas carbone</td></tr>
+          <tr><td>Sous-types</td><td><strong>Aigus</strong> (inondations, tempêtes, incendies) et <strong>chroniques</strong> (hausse du niveau de la mer, stress hydrique, températures)</td><td>Politiques publiques (prix du carbone, normes), technologie, préférences des consommateurs, contentieux</td></tr>
+          <tr><td>Exemple</td><td>Dépréciation de biens immobiliers en zone inondable</td><td>Actifs « échoués » d'un producteur d'énergie fossile</td></tr>
+        </tbody></table>` },
+      { h: "Des facteurs de risque, pas une nouvelle catégorie", html: `
+        <p>Le superviseur considère les risques climatiques et environnementaux comme des <strong>facteurs</strong> qui se transmettent aux catégories existantes :</p>
+        <ul>
+          <li><strong>Crédit</strong> : hausse des PD des secteurs exposés, baisse de la valeur des sûretés immobilières (LGD) ;</li>
+          <li><strong>Marché</strong> : réévaluation brutale des actions et obligations des secteurs carbonés ;</li>
+          <li><strong>Liquidité</strong> : retraits de dépôts après une catastrophe, décote des actifs ;</li>
+          <li><strong>Opérationnel</strong> : dommages aux sites, contentieux et risque de « greenwashing » ;</li>
+          <li><strong>Stratégique et réputation</strong> : viabilité du modèle d'affaires.</li>
+        </ul>
+        <p>Les facteurs <strong>sociaux</strong> (droits humains, conditions de travail) et de <strong>gouvernance</strong> (corruption, rémunérations) se transmettent de la même façon.</p>` },
+      { h: "La double matérialité", html: `
+        <p>La <strong>matérialité financière</strong> (vision « outside-in ») mesure l'impact des facteurs ESG sur la banque. La <strong>matérialité d'impact</strong> (« inside-out ») mesure l'impact de la banque, via ses financements, sur l'environnement et la société. Le reporting de durabilité européen (CSRD) retient les deux ; la gestion prudentielle des risques se concentre sur la première, sans ignorer que la seconde peut devenir un risque juridique ou de réputation.</p>` }
+    ],
+    points: ["Risque physique (aigu, chronique) et risque de transition", "Les facteurs ESG se transmettent aux risques existants", "Double matérialité : financière et d'impact"]
+  },
+  {
+    id: "m6-l2",
+    titre: "Attentes prudentielles et orientations de l'EBA",
+    duree: 25,
+    objectifs: ["Connaître les attentes de la BCE", "Situer les orientations de l'EBA sur la gestion des risques ESG", "Comprendre les plans de transition prudentiels"],
+    sections: [
+      { h: "Le guide de la BCE", html: `
+        <p>Publié en novembre 2020, le guide de la BCE relatif aux risques liés au climat et à l'environnement formule <strong>13 attentes prudentielles</strong> couvrant le modèle d'affaires et la stratégie, la gouvernance et l'appétit pour le risque, la gestion des risques (crédit, opérationnel, marché, liquidité, ICAAP, stress tests) et la publication d'informations. La BCE a fixé des échéances de mise en conformité et n'a pas hésité à utiliser des astreintes pour les banques en retard.</p>` },
+      { h: "Les orientations de l'EBA (EBA/GL/2025/01)", html: `
+        <p>Publiées le 9 janvier 2025 en application de CRD6, les orientations sur la gestion des risques ESG s'appliquent depuis le <strong>11 janvier 2026</strong> (au plus tard le 11 janvier 2027 pour les établissements petits et non complexes). Elles prévoient :</p>
+        <ul>
+          <li>une <strong>évaluation régulière de la matérialité</strong> des risques ESG, sur des horizons court, moyen et long terme, ce dernier couvrant au moins 10 ans ;</li>
+          <li>des <strong>méthodologies de mesure</strong> : approches par exposition (notation ESG des contreparties), par secteur, par portefeuille (alignement, émissions financées) et par scénario ;</li>
+          <li>l'intégration dans la stratégie, l'appétit pour le risque, les politiques de crédit, le suivi par indicateurs et le reporting interne ;</li>
+          <li>des <strong>plans prudentiels de transition</strong> (article 76(2) de la CRD) avec objectifs, jalons et indicateurs, cohérents avec les plans publiés au titre d'autres textes européens.</li>
+        </ul>` },
+      { h: "Publication : Pilier 3 ESG", html: `
+        <p>Les grandes banques cotées publient des informations ESG normalisées au titre du Pilier 3 : exposition aux secteurs carbonés, émissions financées, risques physiques par zone géographique, actions d'atténuation et ratio d'actifs verts (GAR) aligné sur la taxonomie européenne. Le cadre de reporting de durabilité a fait l'objet de simplifications européennes en 2025-2026 : vérifie le périmètre applicable à chaque établissement.</p>` }
+    ],
+    points: ["BCE : 13 attentes prudentielles depuis 2020", "EBA/GL/2025/01 : application au 11 janvier 2026, horizon d'au moins 10 ans", "Plans prudentiels de transition (art. 76(2) CRD)"]
+  },
+  {
+    id: "m6-l3",
+    titre: "Scénarios et stress tests climatiques",
+    duree: 20,
+    objectifs: ["Connaître les scénarios du NGFS", "Décrire la mécanique d'un stress test climatique", "Identifier les limites méthodologiques"],
+    sections: [
+      { h: "Les scénarios du NGFS", html: `
+        <p>Le Network for Greening the Financial System (NGFS), réseau de banques centrales et de superviseurs, publie des scénarios de référence regroupés en grandes familles :</p>
+        <ul>
+          <li><strong>Transition ordonnée</strong> : politiques climatiques introduites tôt et progressivement (par exemple « Net Zero 2050 ») ; risques de transition et physiques modérés ;</li>
+          <li><strong>Transition désordonnée</strong> : action tardive ou brutale ; risques de transition élevés ;</li>
+          <li><strong>Monde « hot house »</strong> : politiques insuffisantes ; risques physiques sévères et irréversibles ;</li>
+          <li><strong>« Too little, too late »</strong> : transition tardive et insuffisante, cumulant les deux risques.</li>
+        </ul>` },
+      { h: "Mécanique d'un stress test climatique", html: `
+        <ol>
+          <li>Choix des <strong>scénarios</strong> et de l'horizon (souvent 10 à 30 ans, bien au-delà des stress tests classiques) ;</li>
+          <li><strong>Traduction macroéconomique et sectorielle</strong> : prix du carbone, PIB, prix de l'énergie, valeur ajoutée par secteur ;</li>
+          <li><strong>Impact sur les contreparties</strong> : hausse des coûts (émissions × prix du carbone), baisse de l'EBITDA, dégradation des ratios financiers, migration de notation et de PD ;</li>
+          <li><strong>Impact sur les sûretés</strong> : valeur des biens immobiliers selon la performance énergétique et l'exposition aux aléas physiques ;</li>
+          <li><strong>Agrégation</strong> en pertes de crédit, en RWA et en capital.</li>
+        </ol>
+        <p>Le calculateur « Choc carbone » de ce module illustre l'étape 3 pour une entreprise.</p>` },
+      { h: "Limites et bonnes pratiques", html: `
+        <p>Les principaux défis sont la <strong>disponibilité des données</strong> (émissions de scope 3, localisation précise des actifs), l'horizon très long qui rend l'hypothèse de bilan statique peu réaliste, et l'incertitude des scénarios. Les superviseurs (BCE en 2022, EBA avec l'exercice « Fit-for-55 ») ont utilisé ces exercices surtout comme outils d'apprentissage. Les bonnes pratiques consistent à documenter les hypothèses, à utiliser des approximations sectorielles prudentes et à intégrer progressivement les résultats dans l'ICAAP et l'appétit pour le risque.</p>` }
+    ],
+    points: ["NGFS : ordonné, désordonné, hot house, too little too late", "Chaîne : scénario → secteur → contrepartie → pertes et capital", "Les données sont la première limite"]
+  }],
+  quiz: [
+    { q: "La hausse progressive du niveau de la mer est un exemple de :", o: ["Risque physique aigu", "Risque physique chronique", "Risque de transition technologique", "Risque de transition juridique"], c: 1, e: "Les risques physiques chroniques résultent d'évolutions lentes (niveau de la mer, températures) ; les risques aigus sont des événements extrêmes." },
+    { q: "Selon l'approche prudentielle, les risques climatiques sont :", o: ["Une nouvelle catégorie de risque de Pilier 1 avec son propre ratio", "Des facteurs qui se transmettent aux risques existants (crédit, marché, liquidité, opérationnel)", "Un sujet exclusivement extra-financier", "Couverts uniquement par le risque de réputation"], c: 1, e: "Le superviseur les traite comme des facteurs de risque transmis aux catégories existantes, à intégrer dans le dispositif de gestion des risques." },
+    { q: "À partir de quelle date les orientations de l'EBA sur la gestion des risques ESG s'appliquent-elles aux grands établissements ?", o: ["9 janvier 2025", "17 janvier 2025", "11 janvier 2026", "11 janvier 2027"], c: 2, e: "Elles s'appliquent depuis le 11 janvier 2026 ; les établissements petits et non complexes ont jusqu'au 11 janvier 2027 au plus tard." },
+    { q: "Quel scénario NGFS combine une action tardive et des politiques insuffisantes ?", o: ["Net Zero 2050", "Transition désordonnée", "Too little, too late", "Current policies"], c: 2, e: "« Too little, too late » cumule une transition tardive et insuffisante : risques de transition et physiques élevés." },
+    { q: "Une entreprise émet 2 MtCO2e par an. Le prix du carbone augmente de 100 € par tonne sans possibilité de répercussion. L'impact sur son EBITDA est :", o: ["−2 M€", "−20 M€", "−200 M€", "−2 Md€"], c: 2, e: "2 000 000 t × 100 €/t = 200 M€ de coûts supplémentaires, en baisse directe de l'EBITDA." }
+  ]
+},
+{
+  id: "modeles",
+  num: 7,
+  titre: "Risque de modèle",
+  accroche: "Gouverner, valider et surveiller les modèles : du cycle de vie au backtesting, jusqu'aux attentes sur l'apprentissage automatique.",
+  couleur: "#2f5f73",
+  calcs: ["bin"],
+  lecons: [
+  {
+    id: "m7-l1",
+    titre: "Gouvernance et cycle de vie des modèles",
+    duree: 20,
+    objectifs: ["Définir le risque de modèle", "Décrire le cycle de vie d'un modèle", "Organiser l'inventaire et la hiérarchisation des modèles"],
+    sections: [
+      { h: "Qu'est-ce que le risque de modèle ?", html: `
+        <p>Le risque de modèle est le risque de pertes ou de décisions erronées résultant d'un modèle <strong>mal conçu</strong> (erreur de spécification, hypothèses inadaptées, données de mauvaise qualité, erreur d'implémentation) ou <strong>mal utilisé</strong> (hors de son périmètre ou sans tenir compte de ses limites). Il concerne aussi bien les modèles réglementaires (IRB, IMA, CCR) que les modèles de valorisation, de provisionnement IFRS 9, d'octroi, d'ALM ou de lutte contre le blanchiment.</p>
+        <p>La référence historique est la guidance américaine <strong>SR 11-7</strong> (Réserve fédérale et OCC, 2011) ; au Royaume-Uni, le PRA a publié le <strong>SS1/23</strong>.</p>` },
+      { h: "Le cycle de vie", html: `
+        <ol>
+          <li><strong>Développement</strong> : besoin métier, données, choix méthodologique, documentation ;</li>
+          <li><strong>Validation initiale</strong> indépendante ;</li>
+          <li><strong>Approbation</strong> par un comité, et par le superviseur pour les modèles réglementaires ;</li>
+          <li><strong>Implémentation</strong> et tests dans les systèmes de production ;</li>
+          <li><strong>Utilisation</strong> conforme au périmètre défini (« use test ») ;</li>
+          <li><strong>Suivi de la performance</strong> (monitoring) et <strong>revalidation périodique</strong> ;</li>
+          <li><strong>Modification</strong> (avec classification matérielle ou non) ou <strong>retrait</strong>.</li>
+        </ol>` },
+      { h: "Inventaire et hiérarchisation", html: `
+        <p>Un dispositif de gestion du risque de modèle (MRM) repose sur un <strong>inventaire exhaustif</strong> des modèles (propriétaire, utilisateur, statut de validation, limites connues) et une <strong>hiérarchisation</strong> (tiering) selon la matérialité, la complexité et l'incertitude. Le niveau de risque détermine la profondeur et la fréquence de la validation.</p>
+        <p>Les rôles sont séparés : <strong>propriétaire</strong> (métier, première ligne), <strong>développeur</strong>, <strong>validateur indépendant</strong> (deuxième ligne) et <strong>audit interne</strong> (troisième ligne). Un comité des modèles au niveau de la direction supervise l'ensemble. Le risque de modèle résiduel peut donner lieu à des marges de prudence ou à des ajustements de valeur.</p>` }
+    ],
+    points: ["Risque de modèle : mauvaise conception ou mauvaise utilisation", "Cycle : développement, validation, approbation, usage, suivi, revalidation", "Inventaire, tiering et séparation des rôles"]
+  },
+  {
+    id: "m7-l2",
+    titre: "La validation indépendante",
+    duree: 25,
+    objectifs: ["Structurer une revue de validation", "Mesurer le pouvoir discriminant d'un modèle de notation", "Tester la calibration d'une PD"],
+    sections: [
+      { h: "Les axes d'une validation", html: `
+        <ul>
+          <li><strong>Revue conceptuelle</strong> : pertinence de la méthode, hypothèses, alternatives ;</li>
+          <li><strong>Données</strong> : représentativité, qualité, traitements (valeurs manquantes, exclusions) ;</li>
+          <li><strong>Réplication</strong> et contrôle de l'implémentation ;</li>
+          <li><strong>Performance quantitative</strong> : discrimination, calibration, stabilité ;</li>
+          <li><strong>Analyses de sensibilité</strong> et tests de résistance aux hypothèses ;</li>
+          <li><strong>Usage</strong> : conformité au périmètre, ajustements manuels (overrides).</li>
+        </ul>
+        <p>La validation conclut par une opinion graduée et des constats classés par sévérité, assortis d'échéances de remédiation.</p>` },
+      { h: "Discrimination : la courbe ROC et le Gini", html: `
+        <p>Le <strong>pouvoir discriminant</strong> mesure la capacité d'un modèle à classer les emprunteurs, les futurs défauts recevant les plus mauvaises notes. On l'évalue par l'aire sous la courbe ROC (<strong>AUC</strong>) ou par l'indice de <strong>Gini</strong> (Accuracy Ratio) :</p>
+        <div class="f">Gini = 2 × AUC − 1</div>
+        <p>Un modèle aléatoire a un Gini de 0, un modèle parfait de 1. Pour un modèle de notation d'entreprises, un Gini de 50 % à 70 % est courant. On suit aussi la <strong>stabilité</strong> de la population (Population Stability Index).</p>` },
+      { h: "Calibration : le test binomial", html: `
+        <p>La calibration vérifie que les PD prévues correspondent aux taux de défaut observés. Pour une classe de notation de n emprunteurs de PD p, le nombre de défauts suit, sous hypothèse d'indépendance, une <strong>loi binomiale</strong> B(n, p). On rejette la calibration si la probabilité d'observer au moins d défauts est trop faible :</p>
+        <div class="f">p-value = P( X ≥ d ) avec X ~ B(n, p)</div>
+        <p>Comme les défauts sont corrélés en pratique, ce test est trop sévère en période de crise ; on le complète par le test de <strong>Jeffreys</strong> (approche bayésienne recommandée par la BCE), par des tests multi-classes et par une analyse sur plusieurs années. Le calculateur « Test binomial » te permet de l'appliquer.</p>` }
+    ],
+    points: ["Validation : conception, données, réplication, performance, usage", "Gini = 2 × AUC − 1", "Calibration : test binomial, complété par Jeffreys"]
+  },
+  {
+    id: "m7-l3",
+    titre: "Modèles internes, guide de la BCE et apprentissage automatique",
+    duree: 20,
+    objectifs: ["Situer le guide de la BCE sur les modèles internes", "Connaître les attentes sur l'apprentissage automatique", "Identifier les enjeux d'explicabilité"],
+    sections: [
+      { h: "De TRIM au guide de la BCE", html: `
+        <p>De 2016 à 2021, la BCE a mené la revue ciblée des modèles internes (<strong>TRIM</strong>) afin de réduire la variabilité injustifiée des RWA entre banques. Son guide sur les modèles internes, issu de cette revue, a été révisé à plusieurs reprises, dont le <strong>28 juillet 2025</strong> pour tenir compte de CRR3. Il couvre des principes transversaux (gestion du risque de modèle, gouvernance des données, validation interne, recours à des tiers) et des chapitres par risque (crédit, marché sous CRR2 et sous CRR3, contrepartie).</p>
+        <p>La version de février 2024 précisait déjà comment intégrer les risques climatiques matériels dans les modèles internes.</p>` },
+      { h: "Les attentes sur l'apprentissage automatique", html: `
+        <p>La révision de 2025 ajoute une section consacrée aux techniques d'<strong>apprentissage automatique</strong> dans les modèles internes, autour de cinq thèmes :</p>
+        <ul>
+          <li><strong>Gouvernance</strong> : compétences, rôles et intégration dans le dispositif de MRM ;</li>
+          <li><strong>Données</strong> : traçabilité et maintenance ;</li>
+          <li><strong>Méthodes mathématiques</strong> : justification des choix, prévention du surapprentissage, échantillons de test indépendants ;</li>
+          <li><strong>Explicabilité</strong> : capacité à expliquer les résultats au niveau global et individuel (par exemple avec des valeurs de Shapley) ;</li>
+          <li><strong>Usage</strong> : compréhension par les utilisateurs et contrôle des ajustements.</li>
+        </ul>` },
+      { h: "Enjeux pratiques pour le risk manager", html: `
+        <p>Les modèles d'apprentissage automatique améliorent souvent la discrimination, mais au prix d'une <strong>complexité</strong> et d'une <strong>instabilité</strong> plus fortes. Le validateur doit vérifier l'absence de biais (y compris discriminatoires pour les modèles d'octroi), la robustesse aux changements de population et la reproductibilité. Le règlement européen sur l'intelligence artificielle classe par ailleurs l'évaluation de la solvabilité des personnes physiques parmi les usages à haut risque, avec des exigences propres.</p>
+        <p>Pour les modèles d'IA générative utilisés en appui (rédaction, synthèse), l'inventaire et une évaluation proportionnée des risques restent nécessaires.</p>` }
+    ],
+    points: ["Guide de la BCE révisé le 28 juillet 2025 (CRR3)", "ML : gouvernance, données, méthodes, explicabilité, usage", "Biais, stabilité et reproductibilité au cœur de la validation"]
+  }],
+  quiz: [
+    { q: "Le risque de modèle couvre :", o: ["Uniquement les erreurs de code informatique", "Les erreurs de conception et la mauvaise utilisation des modèles", "Uniquement les modèles réglementaires de Pilier 1", "Uniquement les modèles de valorisation des dérivés"], c: 1, e: "Il couvre la conception (méthode, hypothèses, données, implémentation) et l'usage, pour tous les modèles utilisés dans la prise de décision." },
+    { q: "Un modèle de notation a une AUC de 0,80. Quel est son indice de Gini ?", o: ["40 %", "60 %", "80 %", "64 %"], c: 1, e: "Gini = 2 × AUC − 1 = 2 × 0,80 − 1 = 0,60." },
+    { q: "Pourquoi le test binomial est-il souvent trop sévère pour valider une PD ?", o: ["Il ignore la taille de l'échantillon", "Il suppose l'indépendance des défauts, alors qu'ils sont corrélés", "Il ne s'applique qu'aux portefeuilles de détail", "Il impose une PD minimale de 0,03 %"], c: 1, e: "La corrélation des défauts (facteur systématique) élargit la distribution réelle du nombre de défauts ; le test binomial rejette alors trop souvent en période de crise." },
+    { q: "Dans un dispositif de MRM, la validation indépendante relève de :", o: ["La première ligne", "La deuxième ligne", "La troisième ligne", "L'auditeur externe"], c: 1, e: "La validation indépendante est une fonction de deuxième ligne ; l'audit interne (troisième ligne) vérifie l'efficacité du dispositif dans son ensemble." },
+    { q: "La révision du guide de la BCE sur les modèles internes publiée en juillet 2025 a notamment ajouté :", o: ["Une section sur l'apprentissage automatique", "La suppression des modèles IRB", "Un nouveau ratio de liquidité", "Une approche AMA pour le risque opérationnel"], c: 0, e: "Elle introduit des attentes sur l'usage des techniques d'apprentissage automatique (gouvernance, données, méthodes, explicabilité, usage) et intègre les changements de CRR3." }
+  ]
+});
+
+Object.assign(window.CALCS, {
+  opr: { titre: "Capital pour risque opérationnel", module: "oprisk", desc: "Indicateur d'activité, composante BIC par tranches et RWA selon l'approche standard CRR3." },
+  clim: { titre: "Choc carbone sur une entreprise", module: "climat", desc: "Effet d'une hausse du prix du carbone sur l'EBITDA, le levier et la couverture des intérêts d'une contrepartie." },
+  bin: { titre: "Test binomial de calibration", module: "modeles", desc: "Comparer les défauts observés à la PD prévue d'une classe de notation." }
+});
+
+window.ABOUT = {
+  nom: "Laurent Motais de Narbonne",
+  titre: "Risk Manager Senior · Formateur en gestion des risques",
+  linkedin: "https://www.linkedin.com/in/laurent-motais-de-narbonne/",
+  site: "https://ldenarbonne.github.io/",
+  email: "ldenarbonne@googlemail.com"
+};
+
+</script>
+<script>
+(function(){
+"use strict";
+const MODS = window.MODULES, CALCS = window.CALCS;
+const $ = (s, r=document) => r.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt = (x, d=0) => isFinite(x) ? x.toLocaleString("fr-FR", {minimumFractionDigits:d, maximumFractionDigits:d}) : "—";
+const pct = (x, d=1) => isFinite(x) ? (x*100).toLocaleString("fr-FR", {minimumFractionDigits:d, maximumFractionDigits:d}) + " %" : "—";
+const num = v => { const x = parseFloat(String(v).replace(/\s/g,"").replace(",", ".")); return isFinite(x) ? x : NaN; };
+const ALL_LESSONS = MODS.flatMap(m => m.lecons.map(l => ({...l, mod:m})));
+const lessonById = id => ALL_LESSONS.find(l => l.id === id);
+const modById = id => MODS.find(m => m.id === id);
+
+function toast(msg){ const t = $("#toast"); t.textContent = msg; t.classList.add("show"); clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove("show"), 2600); }
+
+/* ---------- Statistiques ---------- */
+function erfc(x){ const z=Math.abs(x), t=1/(1+0.5*z);
+  const r=t*Math.exp(-z*z-1.26551223+t*(1.00002368+t*(0.37409196+t*(0.09678418+t*(-0.18628806+t*(0.27886807+t*(-1.13520398+t*(1.48851587+t*(-0.82215223+t*0.17087277)))))))));
+  return x>=0 ? r : 2-r; }
+const N = x => 0.5*erfc(-x/Math.SQRT2);
+const phi = x => Math.exp(-x*x/2)/Math.sqrt(2*Math.PI);
+function Ninv(p){
+  if(p<=0) return -Infinity; if(p>=1) return Infinity;
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00],
+        b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01],
+        c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00],
+        d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl=0.02425; let q,r,x;
+  if(p<pl){ q=Math.sqrt(-2*Math.log(p)); x=(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  else if(p<=1-pl){ q=p-0.5; r=q*q; x=(((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+  else { q=Math.sqrt(-2*Math.log(1-p)); x=-(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  const e = N(x)-p, u = e*Math.sqrt(2*Math.PI)*Math.exp(x*x/2); return x - u/(1+x*u/2);
+}
+
+/* ---------- Progression et stockage ---------- */
+const LS_KEY = "riskacademie-progress-v1";
+let P = { lessons:{}, quizzes:{}, calcs:{}, updatedAt:0 };
+const ctx = { db:null, user:null, uid:null, owner:false, canWrite:false, mode:"local", statique:false };
+const CFG = window.RA_CONFIG || {};
+const IMP_KEY = "riskacademie-imports-v1";
+function loadImports(){ try{ const o = JSON.parse(localStorage.getItem(IMP_KEY)||"{}"); return Object.entries(o).map(([id,x])=>({ id, src:"import", name:String(x.name||"Sans nom"), p: normalize(x.p||{}) })); }catch(e){ return []; } }
+function saveImport(id, rec){ try{ const o = JSON.parse(localStorage.getItem(IMP_KEY)||"{}"); if(rec) o[id] = rec; else delete o[id]; localStorage.setItem(IMP_KEY, JSON.stringify(o)); return true; }catch(e){ return false; } }
+async function sha256(t){ const b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function loadLocal(){ try{ const s = localStorage.getItem(LS_KEY); if(s){ const o = JSON.parse(s); if(o && typeof o==="object") P = normalize(o); } }catch(e){} }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(P)); }catch(e){} }
+function normalize(o){ return { lessons: o.lessons||{}, quizzes: o.quizzes||{}, calcs: o.calcs||{}, updatedAt: o.updatedAt||0 }; }
+function merge(a, b){
+  const out = normalize(JSON.parse(JSON.stringify(a)));
+  for(const k in (b.lessons||{})) out.lessons[k] = Math.min(out.lessons[k]||Infinity, b.lessons[k]);
+  for(const k in (b.calcs||{})) out.calcs[k] = Math.min(out.calcs[k]||Infinity, b.calcs[k]);
+  for(const k in (b.quizzes||{})){ const x = out.quizzes[k], y = b.quizzes[k];
+    if(!x) out.quizzes[k] = y;
+    else { const latest = (y.at||0) > (x.at||0) ? y : x;
+      out.quizzes[k] = { best: Math.max(x.best||0, y.best||0), total: latest.total, last: latest.last, wrong: latest.wrong||[], attempts: Math.max(x.attempts||0, y.attempts||0), at: latest.at }; } }
+  out.updatedAt = Math.max(a.updatedAt||0, b.updatedAt||0);
+  return out;
+}
+let writing = false, dirty = false;
+async function persist(){
+  P.updatedAt = Date.now(); saveLocal();
+  if(!(ctx.db && ctx.uid && ctx.canWrite)) return;
+  dirty = true; if(writing) return;
+  writing = true;
+  while(dirty){ dirty = false;
+    try{ await ctx.db.doc("progress/"+ctx.uid).set(JSON.parse(JSON.stringify(P))); setStatus("cloud"); }
+    catch(e){ if(e && e.code === "invalid_argument"){ ctx.canWrite = false; setStatus("local"); } else if(e && e.code === "unavailable"){ await new Promise(r=>setTimeout(r, 800+Math.random()*800)); dirty = true; } else { setStatus("local"); } }
+  }
+  writing = false;
+}
+function setStatus(m){ ctx.mode = m; const el = $("#syncStatus");
+  const txt = m==="cloud" ? "Progression synchronisée avec votre compte" : m==="local" ? "Progression enregistrée dans ce navigateur" : "Connexion…";
+  el.innerHTML = `<span class="dot ${m==="cloud"?"on":m==="local"?"local":""}"></span><span>${txt}</span>`; }
+
+function modStats(m, prog=P){
+  const done = m.lecons.filter(l => prog.lessons && prog.lessons[l.id]).length;
+  const qz = prog.quizzes && prog.quizzes[m.id];
+  return { done, total: m.lecons.length, quiz: qz, ratio: (done + (qz ? 1 : 0)) / (m.lecons.length + 1) };
+}
+function globalStats(prog=P){
+  const totalUnits = MODS.reduce((s,m)=>s+m.lecons.length+1,0);
+  const doneUnits = MODS.reduce((s,m)=>{ const st = modStats(m, prog); return s + st.done + (st.quiz?1:0); },0);
+  const scores = MODS.map(m => prog.quizzes && prog.quizzes[m.id]).filter(Boolean).map(q => q.best/q.total);
+  return { ratio: doneUnits/totalUnits, doneUnits, totalUnits, avg: scores.length ? scores.reduce((a,b)=>a+b,0)/scores.length : NaN, nQuiz: scores.length };
+}
+
+/* ---------- Navigation ---------- */
+function nav(){
+  const h = location.hash.slice(1) || "accueil";
+  const items = [["accueil","Accueil"],["parcours","Parcours"],["calculateurs","Calculateurs"],["progression","Ma progression"],["apropos","Le formateur"]];
+  if(CFG.labUrl) items.splice(3, 0, ["__lab","Laboratoire"]);
+  if(ctx.owner) items.push(["formateur","Espace formateur"]);
+  const sec = h.startsWith("module-")||h.startsWith("lecon-")||h.startsWith("quiz-") ? "parcours" : h.startsWith("calc-") ? "calculateurs" : h;
+  $("#nav").innerHTML = items.map(([k,l]) => k==="__lab" ? `<a href="${esc(CFG.labUrl)}" target="_blank" rel="noopener">${l} ↗</a>` : `<a href="#${k}" class="${k===sec?"on":""} ${k==="formateur"?"trainer":""}">${l}</a>`).join("");
+}
+function route(){
+  const h = location.hash.slice(1) || "accueil"; const v = $("#view");
+  if($("#pres").classList.contains("open")) closePres();
+  nav();
+  let html;
+  if(h==="accueil") html = vHome();
+  else if(h==="parcours") html = vParcours();
+  else if(h.startsWith("module-")) html = vModule(h.slice(7));
+  else if(h.startsWith("lecon-")) html = vLesson(h.slice(6));
+  else if(h.startsWith("quiz-")) html = vQuiz(h.slice(5));
+  else if(h==="calculateurs") html = vCalcs();
+  else if(h.startsWith("calc-")) html = vCalc(h.slice(5));
+  else if(h==="progression") html = vProgress();
+  else if(h==="apropos") html = vAbout();
+  else if(h==="formateur") html = ctx.owner ? vTrainer() : (ctx.statique && CFG.trainerHash ? vUnlock() : `<div class="empty">Cet espace est réservé au formateur.</div>`);
+  else html = vHome();
+  v.innerHTML = html || `<div class="empty">Page introuvable. <a href="#accueil">Retour à l'accueil</a></div>`;
+  window.scrollTo(0,0);
+  const after = AFTER[h.split("-")[0]]; if(after) after(h);
+}
+const AFTER = {};
+
+/* ---------- Vues ---------- */
+function vHome(){
+  const g = globalStats();
+  const next = ALL_LESSONS.find(l => !P.lessons[l.id]);
+  return `
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Formation professionnelle · niveau intermédiaire</div>
+      <h1>Se former au risk management bancaire et financier</h1>
+      <p class="lead">${MODS.length} modules, ${ALL_LESSONS.length} leçons, des quiz corrigés et ${Object.keys(CALCS).length} calculateurs pour passer de la théorie à la pratique, du risque de marché au risque de modèle, en passant par la liquidité, la réglementation et le climat.</p>
+      <p class="meta" style="margin-top:-6px">Une formation conçue par <a href="#apropos">${esc(window.ABOUT.nom)}</a>, ${esc(window.ABOUT.titre.split(" · ")[0])}.</p>
+      <div class="row" style="margin-top:18px">
+        ${next ? `<a class="btn" href="#lecon-${next.id}">${g.doneUnits ? "Reprendre" : "Commencer"} : ${esc(next.titre)}</a>` : `<a class="btn" href="#progression">Voir mon bilan</a>`}
+        <a class="btn ghost" href="#calculateurs">Ouvrir les calculateurs</a>
+      </div>
+    </div>
+    <div class="hero-panel">
+      <div class="eyebrow" style="color:#e0a35a">Votre avancement</div>
+      <div class="v">${pct(g.ratio,0)}</div>
+      <div style="font-size:14px;opacity:.85">${g.doneUnits} étapes validées sur ${g.totalUnits} (leçons et quiz)</div>
+      <div class="bar" style="background:#2c3846"><i style="width:${g.ratio*100}%;background:#e0a35a"></i></div>
+      <div style="font-size:14px;margin-top:12px;opacity:.85">Score moyen aux quiz : <strong>${g.nQuiz ? pct(g.avg,0) : "—"}</strong></div>
+    </div>
+  </div>
+  <h2>Les modules</h2>
+  <div class="grid g2">${MODS.map(modCard).join("")}</div>`;
+}
+function modCard(m){
+  const s = modStats(m);
+  return `<a class="card link mod-card" href="#module-${m.id}" style="--mod:${m.couleur}">
+    <div class="mod-num">MODULE ${m.num}</div><h3 style="margin-top:4px">${esc(m.titre)}</h3>
+    <div class="meta" style="color:var(--ink2)">${esc(m.accroche)}</div>
+    <div class="row meta" style="margin-top:10px;justify-content:space-between"><span>${s.done}/${s.total} leçons · quiz ${s.quiz ? `${s.quiz.best}/${s.quiz.total}` : "à faire"}</span><span>${m.lecons.reduce((a,l)=>a+l.duree,0)} min</span></div>
+    <div class="bar"><i style="width:${s.ratio*100}%"></i></div></a>`;
+}
+function vParcours(){
+  return `<div class="eyebrow">Parcours complet</div><h1>Programme de formation</h1>
+  <p class="lead">Les modules peuvent être suivis dans l'ordre ou indépendamment. Chaque module se termine par un quiz de validation.</p>
+  ${MODS.map(m => `<div style="--mod:${m.couleur};margin-top:28px"><div class="row" style="justify-content:space-between"><h2 style="margin:0"><span class="mod-num">MODULE ${m.num}</span><br>${esc(m.titre)}</h2><a class="btn ghost small" href="#module-${m.id}">Voir le module</a></div>
+    <ul class="lesson-list" style="margin-top:12px">${lessonItems(m)}</ul></div>`).join("")}`;
+}
+function lessonItems(m){
+  return m.lecons.map(l => `<li><a href="#lecon-${l.id}"><span class="chk ${P.lessons[l.id]?"done":""}">${P.lessons[l.id]?"✓":""}</span><span class="ttl">${esc(l.titre)}</span><span class="meta">${l.duree} min</span></a></li>`).join("")
+    + `<li><a href="#quiz-${m.id}"><span class="chk ${P.quizzes[m.id]?"done":""}">${P.quizzes[m.id]?"✓":""}</span><span class="ttl">Quiz de validation (${m.quiz.length} questions)</span><span class="meta">${P.quizzes[m.id] ? `Meilleur score ${P.quizzes[m.id].best}/${P.quizzes[m.id].total}` : "Non tenté"}</span></a></li>`;
+}
+function vModule(id){
+  const m = modById(id); if(!m) return null; const s = modStats(m);
+  return `<div style="--mod:${m.couleur}">
+  <div class="crumbs"><a href="#parcours">Parcours</a> › Module ${m.num}</div>
+  <div class="mod-num">MODULE ${m.num}</div><h1>${esc(m.titre)}</h1><p class="lead">${esc(m.accroche)}</p>
+  <div class="bar" style="max-width:420px"><i style="width:${s.ratio*100}%"></i></div>
+  <div class="meta" style="margin:6px 0 22px">${s.done}/${s.total} leçons terminées${s.quiz ? ` · meilleur score au quiz ${s.quiz.best}/${s.quiz.total}` : ""}</div>
+  <ul class="lesson-list">${lessonItems(m)}</ul>
+  ${m.calcs.length ? `<h3 style="margin-top:30px">Mettre en pratique</h3><div class="grid g2">${m.calcs.map(calcCard).join("")}</div>` : ""}
+  </div>`;
+}
+function vLesson(id){
+  const l = lessonById(id); if(!l) return null; const m = l.mod;
+  const idx = m.lecons.findIndex(x => x.id === l.id), prev = m.lecons[idx-1], next = m.lecons[idx+1];
+  const done = !!P.lessons[l.id];
+  return `<div style="--mod:${m.couleur}"><article class="lesson">
+  <div class="crumbs"><a href="#parcours">Parcours</a> › <a href="#module-${m.id}">Module ${m.num} · ${esc(m.titre)}</a> › Leçon ${idx+1}</div>
+  <div class="mod-num">LEÇON ${m.num}.${idx+1} · ${l.duree} MIN</div>
+  <h1>${esc(l.titre)}</h1>
+  <div class="objs"><strong>Objectifs</strong><ul>${l.objectifs.map(o=>`<li>${esc(o)}</li>`).join("")}</ul></div>
+  ${l.sections.map(s => `<section><h2>${esc(s.h)}</h2>${s.html}</section>`).join("")}
+  <div class="keypts"><h3>À retenir</h3><ul>${l.points.map(p=>`<li>${esc(p)}</li>`).join("")}</ul></div>
+  <div class="lesson-foot">
+    <div class="row">${prev ? `<a class="btn ghost small" href="#lecon-${prev.id}">← Leçon précédente</a>` : ""}</div>
+    <div class="row">
+      <button class="btn ${done?"ghost":""}" id="markDone" data-id="${l.id}">${done ? "✓ Leçon terminée" : "Marquer comme terminée"}</button>
+      ${next ? `<a class="btn ghost" href="#lecon-${next.id}">Leçon suivante →</a>` : `<a class="btn ghost" href="#quiz-${m.id}">Passer le quiz →</a>`}
+    </div>
+  </div></article></div>`;
+}
+AFTER.lecon = () => { const b = $("#markDone"); if(!b) return; b.onclick = () => {
+  const id = b.dataset.id;
+  if(P.lessons[id]) delete P.lessons[id]; else P.lessons[id] = Date.now();
+  persist(); b.textContent = P.lessons[id] ? "✓ Leçon terminée" : "Marquer comme terminée"; b.classList.toggle("ghost", !!P.lessons[id]);
+  if(P.lessons[id]) toast("Leçon enregistrée dans votre progression");
+}; };
+
+/* ---------- Quiz ---------- */
+function vQuiz(id){
+  const m = modById(id); if(!m) return null; const prev = P.quizzes[m.id];
+  return `<div style="--mod:${m.couleur};max-width:780px">
+  <div class="crumbs"><a href="#parcours">Parcours</a> › <a href="#module-${m.id}">Module ${m.num} · ${esc(m.titre)}</a> › Quiz</div>
+  <div class="mod-num">QUIZ DE VALIDATION · MODULE ${m.num}</div><h1>${esc(m.titre)}</h1>
+  <p class="meta">${m.quiz.length} questions · une seule bonne réponse par question${prev ? ` · meilleur score : ${prev.best}/${prev.total} (${prev.attempts} tentative${prev.attempts>1?"s":""})` : ""}</p>
+  <form id="quizForm" data-mod="${m.id}">
+  ${m.quiz.map((q,i) => `<div class="q" data-i="${i}"><div class="qn">Question ${i+1}/${m.quiz.length}</div><div class="qt">${esc(q.q)}</div>
+    ${q.o.map((o,j)=>`<label class="opt"><input type="radio" name="q${i}" value="${j}"><span>${esc(o)}</span></label>`).join("")}
+    <div class="expl" hidden></div></div>`).join("")}
+  <div class="row" id="quizActions"><button class="btn" type="submit">Valider mes réponses</button><span class="meta" id="quizMsg"></span></div>
+  </form><div id="quizResult"></div></div>`;
+}
+AFTER.quiz = (h) => {
+  const f = $("#quizForm"); if(!f) return; const m = modById(f.dataset.mod);
+  f.addEventListener("change", e => { if(e.target.type==="radio"){ e.target.closest(".q").querySelectorAll(".opt").forEach(o=>o.classList.toggle("sel", o.querySelector("input").checked)); } });
+  f.onsubmit = e => { e.preventDefault();
+    const ans = m.quiz.map((q,i) => { const c = f.querySelector(`input[name=q${i}]:checked`); return c ? +c.value : null; });
+    const missing = ans.filter(a=>a===null).length;
+    if(missing){ $("#quizMsg").textContent = `Il reste ${missing} question${missing>1?"s":""} sans réponse.`; return; }
+    let score = 0; const wrong = [];
+    m.quiz.forEach((q,i) => { const box = f.querySelector(`.q[data-i="${i}"]`); const ok = ans[i]===q.c; if(ok) score++; else wrong.push(i);
+      box.querySelectorAll(".opt").forEach((o,j)=>{ o.classList.remove("sel"); if(j===q.c) o.classList.add("right"); else if(j===ans[i]) o.classList.add("wrong"); o.querySelector("input").disabled = true; });
+      const ex = box.querySelector(".expl"); ex.hidden = false; ex.innerHTML = `<strong>${ok ? "Bonne réponse." : "Réponse attendue : " + esc(q.o[q.c]) + "."}</strong> ${esc(q.e)}`; });
+    const old = P.quizzes[m.id];
+    P.quizzes[m.id] = { best: Math.max(score, old ? old.best : 0), last: score, total: m.quiz.length, wrong, attempts: (old ? old.attempts : 0) + 1, at: Date.now() };
+    persist();
+    const r = score/m.quiz.length;
+    $("#quizActions").innerHTML = `<button class="btn ghost" type="button" id="retry">Recommencer le quiz</button>`;
+    $("#retry").onclick = () => route();
+    $("#quizResult").innerHTML = `<div class="card" style="margin-top:10px"><div class="row" style="gap:22px"><div class="score">${score}/${m.quiz.length}</div>
+      <div><span class="tag ${r>=0.8?"ok":r>=0.6?"warn":"ko"}">${r>=0.8?"Module validé":r>=0.6?"Presque validé":"À retravailler"}</span>
+      <div class="meta" style="margin-top:6px">${r>=0.8 ? "Excellent travail. Tu peux passer au module suivant." : "Relis les leçons concernées puis retente le quiz ; le seuil de validation est de 80 %."}</div></div></div>
+      <div class="row" style="margin-top:14px">${nextModLink(m)}</div></div>`;
+    $("#quizResult").scrollIntoView({behavior:"smooth", block:"center"});
+  };
+};
+function nextModLink(m){ const n = MODS[MODS.indexOf(m)+1]; return n ? `<a class="btn" href="#module-${n.id}">Module suivant : ${esc(n.titre)} →</a>` : `<a class="btn" href="#progression">Voir mon bilan →</a>`; }
+
+/* ---------- Calculateurs ---------- */
+function calcCard(k){ const c = CALCS[k], m = modById(c.module); return `<a class="card link" href="#calc-${k}" style="border-left:4px solid ${m.couleur}"><div class="meta">Module ${m.num} · ${esc(m.titre)}</div><h3 style="margin:4px 0">${esc(c.titre)}</h3><div class="meta" style="color:var(--ink2)">${esc(c.desc)}</div></a>`; }
+function vCalcs(){ return `<div class="eyebrow">Mettre en pratique</div><h1>Calculateurs interactifs</h1><p class="lead">Modifie les paramètres et observe l'effet sur les mesures de risque. Les valeurs par défaut reprennent les exemples des leçons.</p><div class="grid g2" style="margin-top:20px">${Object.keys(CALCS).map(calcCard).join("")}</div>${CFG.labUrl ? `<a class="card link" href="${esc(CFG.labUrl)}" target="_blank" rel="noopener" style="margin-top:20px;background:var(--ink);color:var(--paper);border-color:var(--ink)"><div class="eyebrow" style="color:#e0a35a">Pour aller plus loin</div><h3 style="margin:4px 0;color:var(--paper)">Laboratoire Python ↗</h3><div style="opacity:.85;font-size:15px">VaR Monte-Carlo, backtesting avec test de Kupiec, analyse de vos propres séries de prix et versions Python de tous les calculateurs.</div></a>` : ""}`; }
+function field(id, label, val, hint, attrs=""){ return `<div class="fld"><label for="${id}">${label}</label><input id="${id}" value="${val}" inputmode="decimal" ${attrs}>${hint?`<span class="hint">${hint}</span>`:""}</div>`; }
+function kpi(k, v, s, cls=""){ return `<div class="kpi ${cls}"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:""}</div>`; }
+function vCalc(k){
+  const c = CALCS[k]; if(!c) return null; const m = modById(c.module);
+  const body = { var: calcVarHtml, irb: calcIrbHtml, cva: calcCvaHtml, eve: calcEveHtml, lcr: calcLcrHtml, opr: calcOprHtml, clim: calcClimHtml, bin: calcBinHtml }[k]();
+  return `<div class="crumbs"><a href="#calculateurs">Calculateurs</a> › ${esc(c.titre)}</div>
+  <div class="meta">Module ${m.num} · <a href="#module-${m.id}">${esc(m.titre)}</a></div><h1>${esc(c.titre)}</h1><p class="lead" style="margin-bottom:22px">${esc(c.desc)}</p>${body}`;
+}
+AFTER.calc = (h) => { const k = h.slice(5); const fn = { var: calcVar, irb: calcIrb, cva: calcCva, eve: calcEve, lcr: calcLcr, opr: calcOpr, clim: calcClim, bin: calcBin }[k]; if(!fn) return;
+  const run = () => { try{ fn(); }catch(e){ console.error(e); } };
+  $("#view").querySelectorAll("input,select,textarea").forEach(el => el.addEventListener("input", run));
+  $("#view").querySelectorAll(".tabs button").forEach(b => b.onclick = () => { $("#view").querySelectorAll(".tabs button").forEach(x=>x.classList.toggle("on", x===b)); $("#view").querySelectorAll("[data-pane]").forEach(p=>p.hidden = p.dataset.pane!==b.dataset.tab); run(); });
+  run();
+  if(!P.calcs[k]){ P.calcs[k] = Date.now(); persist(); }
+};
+
+// VaR
+function sampleReturns(){ let s = 42; const rnd = () => (s = (s*16807) % 2147483647) / 2147483647;
+  const out = []; for(let i=0;i<250;i++){ const u1 = rnd(), u2 = rnd(); let z = Math.sqrt(-2*Math.log(u1))*Math.cos(2*Math.PI*u2); if(rnd()<0.04) z *= 2.6; out.push((z*1.1 + 0.03).toFixed(2)); } return out.join(" "); }
+function calcVarHtml(){ return `<div class="tabs"><button class="on" data-tab="p">Paramétrique</button><button data-tab="h">Historique</button></div>
+  <div class="calc"><div class="card">
+    ${field("v_pos","Valeur du portefeuille (€)","10 000 000")}
+    ${field("v_conf","Niveau de confiance (%)","99")}
+    ${field("v_h","Horizon (jours ouvrés)","10","Racine du temps appliquée à partir de la VaR 1 jour")}
+    <div data-pane="p">${field("v_vol","Volatilité annuelle (%)","20","Convertie en volatilité quotidienne par √252")}</div>
+    <div data-pane="h" hidden><div class="fld"><label for="v_ret">Rendements quotidiens historiques (%)</label><textarea id="v_ret">${sampleReturns()}</textarea><span class="hint">Séparés par des espaces, des retours à la ligne ou des points-virgules. Exemple : 250 jours simulés avec queues épaisses.</span></div></div>
+  </div><div><div class="grid g4" id="v_out"></div><div class="card" style="margin-top:16px"><div class="meta" style="margin-bottom:6px">Distribution des P&amp;L quotidiens et seuil de VaR</div><div id="v_chart"></div></div><p class="note" id="v_note" style="margin-top:14px"></p></div></div>`; }
+function calcVar(){
+  const V = num($("#v_pos").value), a = num($("#v_conf").value)/100, h = num($("#v_h").value);
+  const hist = !$("[data-pane=h]").hidden; let var1, es1, pnl;
+  if(!hist){ const sd = num($("#v_vol").value)/100/Math.sqrt(252); const z = Ninv(a);
+    var1 = z*sd*V; es1 = sd*phi(z)/(1-a)*V;
+    pnl = []; for(let i=-40;i<=40;i++){ const x = i/10; pnl.push([x*sd*V, phi(x)]); }
+    drawDist(pnl, -var1, true);
+    $("#v_note").innerHTML = `Hypothèse de normalité : z<sub>${fmt(a*100,1)} %</sub> = ${fmt(z,3)}. Sous loi normale, l'ES ${fmt(a*100,1)} % vaut ${fmt(es1/var1,3)} fois la VaR.`;
+  } else {
+    const r = $("#v_ret").value.split(/[\s;]+/).map(num).filter(isFinite);
+    if(r.length < 20){ $("#v_out").innerHTML = `<div class="empty">Saisis au moins 20 rendements.</div>`; $("#v_chart").innerHTML=""; return; }
+    const losses = r.map(x => -x/100*V).sort((x,y)=>y-x);
+    const k = Math.max(1, Math.floor(r.length*(1-a)));
+    var1 = losses[k-1]; es1 = losses.slice(0,k).reduce((s,x)=>s+x,0)/k;
+    pnl = r.map(x => x/100*V); drawHist(pnl, -var1);
+    $("#v_note").innerHTML = `${r.length} observations : la VaR correspond à la ${k}<sup>e</sup> plus forte perte, l'ES à la moyenne des ${k} plus fortes pertes. Pour comparaison, la VaR paramétrique avec la même volatilité empirique serait de ${fmt(Ninv(a)*stdev(r)/100*V)} €.`;
+  }
+  const sq = Math.sqrt(h);
+  $("#v_out").innerHTML = kpi("VaR 1 jour", fmt(var1)+" €", pct(var1/V,2)+" du portefeuille") + kpi("ES 1 jour", fmt(es1)+" €", "Perte moyenne au-delà de la VaR") + kpi(`VaR ${fmt(h)} jours`, fmt(var1*sq)+" €", `× √${fmt(h)} = ${fmt(sq,3)}`) + kpi(`ES ${fmt(h)} jours`, fmt(es1*sq)+" €", "Même mise à l'échelle");
+}
+function stdev(a){ const m = a.reduce((s,x)=>s+x,0)/a.length; return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1)); }
+function drawDist(pts, cut){ const W=640,H=200,pad=24; const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]); const x0=Math.min(...xs),x1=Math.max(...xs),y1=Math.max(...ys);
+  const X=x=>pad+(x-x0)/(x1-x0)*(W-2*pad), Y=y=>H-pad-y/y1*(H-2*pad);
+  const line = pts.map((p,i)=>(i?"L":"M")+X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join("");
+  const tail = pts.filter(p=>p[0]<=cut); const area = tail.length ? "M"+X(tail[0][0])+","+Y(0)+tail.map(p=>"L"+X(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join("")+"L"+X(cut)+","+Y(0)+"Z" : "";
+  $("#v_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}"><path d="${area}" fill="var(--ko)" opacity=".35"/><path d="${line}" fill="none" stroke="var(--ink)" stroke-width="2"/><line x1="${X(cut)}" x2="${X(cut)}" y1="${pad-6}" y2="${H-pad}" stroke="var(--ko)" stroke-width="2" stroke-dasharray="4 3"/><text x="${X(cut)+6}" y="${pad+6}" font-size="12" fill="var(--ko)">−VaR</text><line x1="${pad}" x2="${W-pad}" y1="${H-pad}" y2="${H-pad}" stroke="var(--line)"/><text x="${W/2}" y="${H-6}" font-size="11" text-anchor="middle" fill="var(--mute)">P&amp;L quotidien (€)</text></svg>`; }
+function drawHist(pnl, cut){ const W=640,H=200,pad=24,nb=30; const x0=Math.min(...pnl), x1=Math.max(...pnl), w=(x1-x0)/nb||1; const bins=new Array(nb).fill(0); pnl.forEach(x=>bins[Math.min(nb-1,Math.floor((x-x0)/w))]++);
+  const ymax=Math.max(...bins), bw=(W-2*pad)/nb; const X=x=>pad+(x-x0)/(x1-x0)*(W-2*pad);
+  const bars = bins.map((b,i)=>{ const left=x0+i*w; const hgt=b/ymax*(H-2*pad); return `<rect x="${(pad+i*bw+1).toFixed(1)}" y="${(H-pad-hgt).toFixed(1)}" width="${(bw-2).toFixed(1)}" height="${hgt.toFixed(1)}" rx="1.5" fill="${left+w<=cut+1e-9?"var(--ko)":"var(--mod)"}" opacity="${left+w<=cut+1e-9?".85":".55"}"/>`; }).join("");
+  $("#v_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}">${bars}<line x1="${X(cut)}" x2="${X(cut)}" y1="${pad-6}" y2="${H-pad}" stroke="var(--ko)" stroke-width="2" stroke-dasharray="4 3"/><text x="${X(cut)+6}" y="${pad+6}" font-size="12" fill="var(--ko)">−VaR</text><line x1="${pad}" x2="${W-pad}" y1="${H-pad}" y2="${H-pad}" stroke="var(--line)"/><text x="${W/2}" y="${H-6}" font-size="11" text-anchor="middle" fill="var(--mute)">P&amp;L quotidien (€)</text></svg>`; }
+
+// IRB
+function irbK(PD, LGD, M){ PD = Math.max(PD, 0.0005); const e = (1-Math.exp(-50*PD))/(1-Math.exp(-50));
+  const R = 0.12*e + 0.24*(1-e); const b = Math.pow(0.11852 - 0.05478*Math.log(PD), 2);
+  const K = (LGD*N((Ninv(PD) + Math.sqrt(R)*Ninv(0.999))/Math.sqrt(1-R)) - PD*LGD) * (1+(M-2.5)*b)/(1-1.5*b);
+  return { K, R, b, PD }; }
+function calcIrbHtml(){ return `<div class="calc"><div class="card">
+  ${field("i_pd","PD à un an (%)","1","Plancher CRR3 de 0,05 % appliqué")}
+  ${field("i_lgd","LGD (%)","45","45 % : valeur F-IRB historique pour le senior non garanti (40 % sous CRR3 pour les entreprises non financières)")}
+  ${field("i_m","Maturité effective M (années)","2,5","Entre 1 et 5 ans")}
+  ${field("i_ead","EAD (€)","10 000 000")}
+  </div><div><div class="grid g4" id="i_out"></div><div class="card" style="margin-top:16px"><div class="meta" style="margin-bottom:6px">Pondération en risque selon la PD (LGD et M constantes)</div><div id="i_chart"></div></div><p class="note" style="margin-top:14px">Formule IRB pour les expositions sur entreprises (article 153 du CRR), sans ajustement de taille pour les PME ni facteur de soutien. Outil pédagogique : ne remplace pas un moteur de calcul réglementaire.</p></div></div>`; }
+function calcIrb(){
+  const PD = num($("#i_pd").value)/100, LGD = num($("#i_lgd").value)/100, M = Math.min(5, Math.max(1, num($("#i_m").value))), EAD = num($("#i_ead").value);
+  const r = irbK(PD, LGD, M), RW = r.K*12.5, RWA = RW*EAD, EL = r.PD*LGD*EAD;
+  $("#i_out").innerHTML = kpi("Pondération (RW)", pct(RW,1), `K = ${pct(r.K,2)}`) + kpi("RWA", fmt(RWA)+" €", "K × 12,5 × EAD") + kpi("Capital à 8 %", fmt(RWA*0.08)+" €", "= K × EAD") + kpi("Perte attendue", fmt(EL)+" €", `Corrélation R = ${pct(r.R,2)}`);
+  const W=640,H=210,pad=34; const pts=[]; for(let i=0;i<=60;i++){ const pd=Math.pow(10, -3.3 + i*(3.3-0.7)/60); pts.push([pd, irbK(pd,LGD,M).K*12.5]); }
+  const xL=v=>pad+(Math.log10(v)+3.3)/(3.3-0.7)*(W-2*pad); const ymax=Math.max(...pts.map(p=>p[1]))*1.1; const Y=v=>H-pad-v/ymax*(H-2*pad);
+  const line=pts.map((p,i)=>(i?"L":"M")+xL(p[0]).toFixed(1)+","+Y(p[1]).toFixed(1)).join("");
+  const ticks=[0.001,0.01,0.05,0.2].map(t=>`<text x="${xL(t)}" y="${H-pad+16}" font-size="11" text-anchor="middle" fill="var(--mute)">${fmt(t*100, t<0.01?1:0)} %</text>`).join("");
+  const yt=[0,0.5,1,1.5,2,2.5].filter(v=>v<ymax).map(v=>`<line x1="${pad}" x2="${W-pad}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${pad-6}" y="${Y(v)+4}" font-size="11" text-anchor="end" fill="var(--mute)">${fmt(v*100)}%</text>`).join("");
+  const cx = xL(Math.min(Math.max(r.PD,0.0005),0.2)), cy = Y(RW);
+  $("#i_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}">${yt}<path d="${line}" fill="none" stroke="var(--mod)" stroke-width="2.5"/>${r.PD<=0.2?`<circle cx="${cx}" cy="${cy}" r="5.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>`:""}${ticks}<text x="${W/2}" y="${H-2}" font-size="11" text-anchor="middle" fill="var(--mute)">PD (échelle logarithmique)</text></svg>`;
+}
+
+// CVA
+function calcCvaHtml(){ return `<div class="calc"><div class="card">
+  ${field("c_ee","Profil d'exposition attendue EE (€, une valeur par année)","1,2 1,8 2,0 1,7 1,0","En millions d'euros, séparés par des espaces : EE en fin d'année 1, 2, 3…")}
+  ${field("c_s","Spread de CDS de la contrepartie (pb)","150")}
+  ${field("c_lgd","LGD de marché (%)","60","Convention usuelle : recouvrement de 40 %")}
+  ${field("c_r","Taux sans risque (%)","2,5")}
+  </div><div><div class="grid g4" id="c_out"></div><div class="card" style="margin-top:16px;overflow-x:auto"><table class="t" id="c_tab"></table></div><p class="note" style="margin-top:14px">CVA unilatérale, discrétisation annuelle, intensité de défaut constante λ = spread / LGD, sans corrélation entre exposition et défaut (pas de wrong-way risk).</p></div></div>`; }
+function calcCva(){
+  const ee = $("#c_ee").value.split(/[\s;]+/).map(num).filter(isFinite).map(x=>x*1e6);
+  const s = num($("#c_s").value)/1e4, L = num($("#c_lgd").value)/100, r = num($("#c_r").value)/100;
+  if(!ee.length || !(L>0)){ $("#c_out").innerHTML = `<div class="empty">Paramètres incomplets.</div>`; return; }
+  const lam = s/L; let cva = 0, rows = "";
+  ee.forEach((e,i)=>{ const t=i+1, pdm = Math.exp(-lam*(t-1)) - Math.exp(-lam*t), df = Math.exp(-r*t), c = L*e*df*pdm; cva += c;
+    rows += `<tr><td>${t}</td><td class="num">${fmt(e)}</td><td class="num">${pct(pdm,2)}</td><td class="num">${fmt(df,4)}</td><td class="num">${fmt(c)}</td></tr>`; });
+  const epe = ee.reduce((a,b)=>a+b,0)/ee.length;
+  $("#c_out").innerHTML = kpi("CVA", fmt(cva)+" €", "Ajustement à déduire de la juste valeur") + kpi("Intensité λ", pct(lam,2), "par an") + kpi("PD cumulée", pct(1-Math.exp(-lam*ee.length),2), `sur ${ee.length} an${ee.length>1?"s":""}`) + kpi("EPE", fmt(epe)+" €", `CVA en pb de l'EPE : ${fmt(cva/epe*1e4,0)} pb`);
+  $("#c_tab").innerHTML = `<thead><tr><th>Année</th><th class="num">EE (€)</th><th class="num">PD marginale</th><th class="num">Actualisation</th><th class="num">Contribution CVA (€)</th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+// EVE
+function calcEveHtml(){ return `<div class="calc"><div class="card">
+  ${field("e_a","Actifs sensibles aux taux (M€)","1 000")}
+  ${field("e_da","Duration modifiée des actifs","4,5")}
+  ${field("e_p","Passifs sensibles aux taux (M€)","920")}
+  ${field("e_dp","Duration modifiée des passifs","1,8")}
+  ${field("e_t1","Fonds propres Tier 1 (M€)","80")}
+  ${field("e_shock","Choc parallèle (pb)","200","Positif pour une hausse, négatif pour une baisse")}
+  </div><div><div class="grid g4" id="e_out"></div><div class="card" style="margin-top:16px"><div class="meta" style="margin-bottom:6px">ΔEVE en % du Tier 1 selon l'amplitude du choc parallèle</div><div id="e_chart"></div></div><p class="note" style="margin-top:14px">Approximation au premier ordre (duration), sans convexité ni options comportementales. Le SOT réglementaire porte sur six scénarios, dont des chocs non parallèles.</p></div></div>`; }
+function calcEve(){
+  const A=num($("#e_a").value), DA=num($("#e_da").value), Pp=num($("#e_p").value), DP=num($("#e_dp").value), T1=num($("#e_t1").value), sh=num($("#e_shock").value)/1e4;
+  const d = x => -(DA*A - DP*Pp)*x; const dEVE = d(sh), ratio = dEVE/T1, gapD = DA - DP*Pp/A;
+  const breach = ratio < -0.15;
+  $("#e_out").innerHTML = kpi("ΔEVE", fmt(dEVE,1)+" M€", `pour ${fmt(sh*1e4)} pb`) + kpi("En % du Tier 1", pct(ratio,1), breach ? `<span class="tag ko">Au-delà du seuil SOT (−15 %)</span>` : `<span class="tag ok">Sous le seuil SOT</span>`) + kpi("Gap de duration", fmt(gapD,2), "D_A − D_P × P/A") + kpi("Choc de rupture", isFinite(-0.15*T1/(DA*A-DP*Pp)) && (DA*A-DP*Pp)!==0 ? fmt(Math.abs(0.15*T1/(DA*A-DP*Pp))*1e4,0)+" pb" : "—", "Amplitude qui atteint −15 % du Tier 1");
+  const W=640,H=220,pad=40; const xs=[]; for(let b=-300;b<=300;b+=10) xs.push(b);
+  const vals = xs.map(b=>d(b/1e4)/T1); const lim = Math.max(0.3, ...vals.map(Math.abs))*1.05;
+  const X=b=>pad+(b+300)/600*(W-2*pad), Y=v=>H/2 - v/lim*(H/2-pad/1.5);
+  const line = xs.map((b,i)=>(i?"L":"M")+X(b).toFixed(1)+","+Y(vals[i]).toFixed(1)).join("");
+  $("#e_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}"><rect x="${pad}" y="${Y(-0.15)}" width="${W-2*pad}" height="${Math.max(0,H-pad/1.5-Y(-0.15))}" fill="var(--ko)" opacity=".08"/><line x1="${pad}" x2="${W-pad}" y1="${Y(-0.15)}" y2="${Y(-0.15)}" stroke="var(--ko)" stroke-dasharray="5 4"/><text x="${W-pad}" y="${Y(-0.15)-5}" font-size="11" text-anchor="end" fill="var(--ko)">Seuil SOT −15 %</text><line x1="${pad}" x2="${W-pad}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--line)"/><line x1="${X(0)}" x2="${X(0)}" y1="${pad/2}" y2="${H-pad/2}" stroke="var(--line)"/><path d="${line}" fill="none" stroke="var(--mod)" stroke-width="2.5"/><circle cx="${X(Math.max(-300,Math.min(300,sh*1e4)))}" cy="${Y(Math.max(-lim,Math.min(lim,ratio)))}" r="5.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>${[-300,-200,-100,0,100,200,300].map(b=>`<text x="${X(b)}" y="${H-4}" font-size="11" text-anchor="middle" fill="var(--mute)">${b>0?"+":""}${b} pb</text>`).join("")}</svg>`;
+}
+
+// LCR
+function calcLcrHtml(){ return `<div class="calc"><div class="card">
+  ${field("l_1","Actifs de niveau 1 (M€)","600","Aucune décote")}
+  ${field("l_2a","Actifs de niveau 2A, avant décote (M€)","250","Décote de 15 %")}
+  ${field("l_2b","Actifs de niveau 2B, avant décote (M€)","150")}
+  <div class="fld"><label for="l_h2b">Décote moyenne du niveau 2B</label><select id="l_h2b"><option value="0.25">25 % (titrisations éligibles)</option><option value="0.5" selected>50 % (obligations d'entreprises, actions)</option></select></div>
+  ${field("l_out","Sorties de trésorerie pondérées sur 30 jours (M€)","900")}
+  ${field("l_in","Entrées de trésorerie pondérées sur 30 jours (M€)","400")}
+  </div><div><div class="grid g4" id="l_out_k"></div><div class="card" style="margin-top:16px;overflow-x:auto"><table class="t" id="l_tab"></table></div><p class="note" style="margin-top:14px">Calcul simplifié selon la méthodologie de Bâle : plafonds de 40 % (niveau 2) et 15 % (niveau 2B) appliqués après décotes, sans retraitement des opérations de financement sécurisées à court terme.</p></div></div>`; }
+function calcLcr(){
+  const L1=num($("#l_1").value), L2A=num($("#l_2a").value)*0.85, L2B=num($("#l_2b").value)*(1-num($("#l_h2b").value)), out=num($("#l_out").value), inn=num($("#l_in").value);
+  const adj15 = Math.max(L2B - 15/85*(L1+L2A), L2B - 15/60*L1, 0);
+  const adj40 = Math.max(L2A + L2B - adj15 - 2/3*L1, 0);
+  const hqla = L1 + L2A + L2B - adj15 - adj40;
+  const inCap = Math.min(inn, 0.75*out), net = out - inCap, lcr = hqla/net;
+  $("#l_out_k").innerHTML = kpi("LCR", pct(lcr,0), lcr>=1 ? `<span class="tag ok">Exigence de 100 % respectée</span>` : `<span class="tag ko">Sous l'exigence de 100 %</span>`) + kpi("Stock de HQLA", fmt(hqla,0)+" M€", "Après décotes et plafonds") + kpi("Sorties nettes", fmt(net,0)+" M€", inn>0.75*out ? "Plafond des entrées à 75 % appliqué" : "Entrées sous le plafond de 75 %") + kpi(lcr>=1?"Excédent":"Besoin de HQLA", fmt(Math.abs(hqla-net),0)+" M€", lcr>=1 ? "Marge au-dessus de 100 %" : "Actifs de niveau 1 à acquérir");
+  $("#l_tab").innerHTML = `<thead><tr><th>Composante</th><th class="num">M€</th></tr></thead><tbody>
+    <tr><td>Niveau 1</td><td class="num">${fmt(L1,1)}</td></tr><tr><td>Niveau 2A après décote</td><td class="num">${fmt(L2A,1)}</td></tr><tr><td>Niveau 2B après décote</td><td class="num">${fmt(L2B,1)}</td></tr>
+    <tr><td>Ajustement plafond 15 % (2B)</td><td class="num">−${fmt(adj15,1)}</td></tr><tr><td>Ajustement plafond 40 % (niveau 2)</td><td class="num">−${fmt(adj40,1)}</td></tr>
+    <tr><th>Stock de HQLA</th><th class="num">${fmt(hqla,1)}</th></tr><tr><td>Sorties</td><td class="num">${fmt(out,1)}</td></tr><tr><td>Entrées retenues (min(entrées ; 75 % des sorties))</td><td class="num">−${fmt(inCap,1)}</td></tr>
+    <tr><th>Sorties nettes</th><th class="num">${fmt(net,1)}</th></tr></tbody>`;
+}
+
+// Risque opérationnel (BIC)
+function calcOprHtml(){ return `<div class="calc"><div class="card">
+  ${field("o_ildc","ILDC — intérêts, locations et dividendes (M€)","2 400","Moyenne sur trois ans, après plafonnement à 2,25 % des actifs productifs")}
+  ${field("o_sc","SC — services (M€)","1 800")}
+  ${field("o_fc","FC — composante financière (M€)","800")}
+  </div><div><div class="grid g4" id="o_out"></div><div class="card" style="margin-top:16px;overflow-x:auto"><table class="t" id="o_tab"></table></div><p class="note" style="margin-top:14px">Approche standard CRR3 avec ILM = 1 (choix européen) : l'exigence est égale à la BIC. Les sous-composantes doivent être calculées selon les articles 314 et 315 du CRR et les normes techniques de l'EBA.</p></div></div>`; }
+function calcOpr(){
+  const BI = num($("#o_ildc").value) + num($("#o_sc").value) + num($("#o_fc").value);
+  const tr = [[0,1000,0.12],[1000,30000,0.15],[30000,Infinity,0.18]]; let bic = 0, rows = "";
+  tr.forEach(([a,b,c]) => { const part = Math.max(0, Math.min(BI,b)-a), v = part*c; bic += v;
+    rows += `<tr><td>${b===Infinity?`Au-delà de ${fmt(a/1000)} Md€`:`De ${fmt(a/1000)} à ${fmt(b/1000)} Md€`}</td><td class="num">${fmt(part,0)}</td><td class="num">${pct(c,0)}</td><td class="num">${fmt(v,1)}</td></tr>`; });
+  $("#o_out").innerHTML = kpi("Indicateur d'activité (BI)", fmt(BI,0)+" M€") + kpi("BIC = exigence", fmt(bic,1)+" M€", `Taux moyen ${pct(bic/BI,2)}`) + kpi("RWA risque opérationnel", fmt(bic*12.5,0)+" M€", "Exigence × 12,5") + kpi("Tranche marginale", BI>30000?"18 %":BI>1000?"15 %":"12 %", "Coefficient appliqué au dernier euro");
+  $("#o_tab").innerHTML = `<thead><tr><th>Tranche de BI</th><th class="num">Montant dans la tranche (M€)</th><th class="num">Coefficient</th><th class="num">Contribution (M€)</th></tr></thead><tbody>${rows}<tr><th colspan="3">Composante BIC</th><th class="num">${fmt(bic,1)}</th></tr></tbody>`;
+}
+
+// Choc carbone
+function calcClimHtml(){ return `<div class="calc"><div class="card">
+  ${field("k_em","Émissions directes et indirectes retenues (tCO2e / an)","2 000 000","Périmètre à définir : scope 1, voire scope 2")}
+  ${field("k_dp","Hausse du prix du carbone (€ / tCO2e)","100")}
+  ${field("k_pt","Part répercutée sur les clients (%)","30","Capacité à augmenter les prix")}
+  ${field("k_eb","EBITDA initial (M€)","600")}
+  ${field("k_nd","Dette nette (M€)","2 100")}
+  ${field("k_int","Charges d'intérêts (M€)","90")}
+  </div><div><div class="grid g4" id="k_out"></div><div class="card" style="margin-top:16px"><div class="meta" style="margin-bottom:6px">Levier (dette nette / EBITDA) selon la hausse du prix du carbone</div><div id="k_chart"></div></div><p class="note" style="margin-top:14px">Illustration d'une étape de stress test climatique (impact direct, sans effets sur les volumes ni investissements de décarbonation). Le seuil de 6× correspond au niveau de levier au-delà duquel la BCE considère qu'une opération à effet de levier appelle une vigilance particulière.</p></div></div>`; }
+function calcClim(){
+  const em=num($("#k_em").value), dp=num($("#k_dp").value), pt=num($("#k_pt").value)/100, eb=num($("#k_eb").value), nd=num($("#k_nd").value), it=num($("#k_int").value);
+  const cost = c => em*c*(1-pt)/1e6; const ebA = eb - cost(dp);
+  const levB = nd/eb, levA = ebA>0 ? nd/ebA : Infinity;
+  $("#k_out").innerHTML = kpi("Coût carbone net", fmt(cost(dp),1)+" M€", `${pct(cost(dp)/eb,1)} de l'EBITDA`) + kpi("EBITDA après choc", fmt(ebA,0)+" M€") + kpi("Levier", (isFinite(levA)?fmt(levA,1)+"×":"EBITDA ≤ 0"), `avant : ${fmt(levB,1)}× ${levA>6?'<span class="tag ko">&gt; 6×</span>':levA>4?'<span class="tag warn">&gt; 4×</span>':'<span class="tag ok">≤ 4×</span>'}`) + kpi("Couverture des intérêts", ebA>0?fmt(ebA/it,1)+"×":"—", `EBITDA / intérêts, avant : ${fmt(eb/it,1)}×`);
+  const W=640,H=210,pad=36, xs=[]; for(let c=0;c<=300;c+=5) xs.push(c);
+  const lv = xs.map(c=>{ const e = eb-cost(c); return e>0 ? nd/e : NaN; }); const ymax = Math.max(8, ...lv.filter(isFinite).filter(v=>v<20))*1.05;
+  const X=c=>pad+c/300*(W-2*pad), Y=v=>H-pad-Math.min(v,ymax)/ymax*(H-2*pad);
+  let d=""; lv.forEach((v,i)=>{ if(isFinite(v) && v<ymax) d += (d?"L":"M")+X(xs[i]).toFixed(1)+","+Y(v).toFixed(1); });
+  $("#k_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}"><line x1="${pad}" x2="${W-pad}" y1="${Y(6)}" y2="${Y(6)}" stroke="var(--ko)" stroke-dasharray="5 4"/><text x="${W-pad}" y="${Y(6)-5}" font-size="11" text-anchor="end" fill="var(--ko)">6×</text><line x1="${pad}" x2="${W-pad}" y1="${Y(4)}" y2="${Y(4)}" stroke="var(--warn)" stroke-dasharray="3 4"/><text x="${W-pad}" y="${Y(4)-5}" font-size="11" text-anchor="end" fill="var(--warn)">4×</text><line x1="${pad}" x2="${W-pad}" y1="${H-pad}" y2="${H-pad}" stroke="var(--line)"/><path d="${d}" fill="none" stroke="var(--mod)" stroke-width="2.5"/>${dp<=300&&isFinite(levA)&&levA<ymax?`<circle cx="${X(dp)}" cy="${Y(levA)}" r="5.5" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>`:""}${[0,50,100,150,200,250,300].map(c=>`<text x="${X(c)}" y="${H-pad+16}" font-size="11" text-anchor="middle" fill="var(--mute)">${c} €</text>`).join("")}</svg>`;
+}
+
+// Test binomial
+function lgamma(x){ const g=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5]; let y=x, t=x+5.5; t-=(x+0.5)*Math.log(t); let s=1.000000000190015; for(const c of g) s+=c/++y; return -t+Math.log(2.5066282746310005*s/x); }
+function betacf(a,b,x){ let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap; if(Math.abs(d)<1e-300)d=1e-300; d=1/d; let h=d;
+  for(let m=1;m<=300;m++){ const m2=2*m; let aa=m*(b-m)*x/((qam+m2)*(a+m2)); d=1+aa*d; if(Math.abs(d)<1e-300)d=1e-300; c=1+aa/c; if(Math.abs(c)<1e-300)c=1e-300; d=1/d; h*=d*c;
+    aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2)); d=1+aa*d; if(Math.abs(d)<1e-300)d=1e-300; c=1+aa/c; if(Math.abs(c)<1e-300)c=1e-300; d=1/d; const del=d*c; h*=del; if(Math.abs(del-1)<3e-12) break; } return h; }
+function betai(a,b,x){ if(x<=0) return 0; if(x>=1) return 1; const bt=Math.exp(lgamma(a+b)-lgamma(a)-lgamma(b)+a*Math.log(x)+b*Math.log(1-x));
+  return x<(a+1)/(a+b+2) ? bt*betacf(a,b,x)/a : 1-bt*betacf(b,a,1-x)/b; }
+function calcBinHtml(){ return `<div class="calc"><div class="card">
+  ${field("b_n","Nombre d'emprunteurs dans la classe","1 000")}
+  ${field("b_pd","PD prévue (%)","1")}
+  ${field("b_d","Défauts observés","16")}
+  ${field("b_a","Niveau de confiance du test (%)","95","Rejet si la p-value est inférieure à 1 − niveau")}
+  </div><div><div class="grid g4" id="b_out"></div><div class="card" style="margin-top:16px"><div class="meta" style="margin-bottom:6px">Distribution binomiale du nombre de défauts sous l'hypothèse de PD correcte</div><div id="b_chart"></div></div><p class="note" style="margin-top:14px">Test unilatéral de sous-estimation de la PD. Le test de Jeffreys utilise la loi a posteriori Beta(d + ½ ; n − d + ½). Les deux tests supposent l'indépendance des défauts.</p></div></div>`; }
+function calcBin(){
+  const n=Math.round(num($("#b_n").value)), p=num($("#b_pd").value)/100, d=Math.round(num($("#b_d").value)), a=num($("#b_a").value)/100;
+  if(!(n>0&&p>0&&p<1&&d>=0&&d<=n)){ $("#b_out").innerHTML=`<div class="empty">Paramètres incohérents.</div>`; $("#b_chart").innerHTML=""; return; }
+  const pv = d===0 ? 1 : betai(d, n-d+1, p); const pj = betai(d+0.5, n-d+0.5, p);
+  let crit = 0; while(crit<=n && (crit===0?1:betai(crit, n-crit+1, p)) >= 1-a) crit++;
+  const rej = pv < 1-a;
+  $("#b_out").innerHTML = kpi("Taux de défaut observé", pct(d/n,2), `PD prévue ${pct(p,2)}`) + kpi("Défauts attendus", fmt(n*p,1), `Seuil de rejet : ${crit} défauts ou plus`) + kpi("p-value binomiale", fmt(pv,4), rej?'<span class="tag ko">Calibration rejetée</span>':'<span class="tag ok">Calibration non rejetée</span>') + kpi("p-value de Jeffreys", fmt(pj,4), pj<1-a?'<span class="tag ko">Rejet</span>':'<span class="tag ok">Non rejet</span>');
+  const W=640,H=200,pad=28, kmax=Math.min(n, Math.max(d+3, Math.ceil(n*p+5*Math.sqrt(n*p*(1-p))+3))); const pm=[];
+  for(let k=0;k<=kmax;k++) pm.push(Math.exp(lgamma(n+1)-lgamma(k+1)-lgamma(n-k+1)+k*Math.log(p)+(n-k)*Math.log(1-p)));
+  const ym=Math.max(...pm), bw=(W-2*pad)/(kmax+1);
+  $("#b_chart").innerHTML = `<svg class="svgchart" viewBox="0 0 ${W} ${H}">${pm.map((v,k)=>{ const h=v/ym*(H-2*pad); return `<rect x="${(pad+k*bw+1).toFixed(1)}" y="${(H-pad-h).toFixed(1)}" width="${Math.max(1,bw-2).toFixed(1)}" height="${h.toFixed(1)}" rx="1" fill="${k>=crit?"var(--ko)":"var(--mod)"}" opacity="${k===d?1:.55}"/>`; }).join("")}<line x1="${pad+d*bw+bw/2}" x2="${pad+d*bw+bw/2}" y1="${pad-8}" y2="${H-pad}" stroke="var(--accent)" stroke-width="2"/><text x="${pad+d*bw+bw/2+5}" y="${pad}" font-size="12" fill="var(--accent)">observé : ${d}</text><line x1="${pad}" x2="${W-pad}" y1="${H-pad}" y2="${H-pad}" stroke="var(--line)"/>${[0,Math.round(kmax/4),Math.round(kmax/2),Math.round(3*kmax/4),kmax].map(k=>`<text x="${pad+k*bw+bw/2}" y="${H-pad+15}" font-size="11" text-anchor="middle" fill="var(--mute)">${k}</text>`).join("")}</svg>`;
+}
+
+/* ---------- À propos ---------- */
+function vAbout(){ const A = window.ABOUT;
+  return `<div class="hero" style="grid-template-columns:1.5fr 1fr;align-items:start">
+  <div><div class="eyebrow">À propos du formateur</div><h1>${esc(A.nom)}</h1><p class="lead" style="margin-top:-4px">${esc(A.titre)}</p>
+  <p>Professionnel de la gestion quantitative des risques depuis plus de vingt-cinq ans, j'ai exercé en banque d'investissement, en gestion d'actifs, dans l'édition de logiciels financiers et en conseil, notamment chez RiskMetrics/JPMorgan, Algorithmics/Fitch, WestLB, Ostrum Asset Management, Nasdaq/Calypso, EY, KPMG et la Banque européenne d'investissement.</p>
+  <p>Mon parcours international (Paris, Londres, Abou Dhabi, Riyad) m'a conduit à travailler sur le risque de marché et la FRTB, le risque de contrepartie et les xVA, l'ALM et la liquidité, ainsi que sur le reporting réglementaire. J'ai notamment été formateur sur l'ensemble des modules de la plateforme Calypso chez Nasdaq, avec un accent sur le risque de marché et la FRTB, et auteur d'un cursus de formation ALM.</p>
+  <p>Titulaire d'un DEA de mathématiques appliquées (Université Paris VII) et formé à la data science (Artefact School of Data, 2025), je conçois des formations qui relient la théorie, la réglementation et la pratique des outils.</p>
+  <h3 style="margin-top:22px">Formations proposées</h3>
+  <ul><li>Sessions intra-entreprise ou individuelles, en français ou en anglais, en présentiel ou à distance</li><li>Parcours sur mesure à partir des modules de RiskAcadémie (risque de marché, crédit et contrepartie, ALM et liquidité, réglementation, risque opérationnel, climat et ESG, risque de modèle)</li><li>Ateliers pratiques sur les calculateurs et études de cas</li></ul></div>
+  <div class="hero-panel"><div class="eyebrow" style="color:#e0a35a">Contact</div>
+  <p style="margin:6px 0 14px;opacity:.9">Pour une demande de formation ou d'intervention :</p>
+  <div style="display:grid;gap:10px">
+    <a class="btn" style="background:#e0a35a;border-color:#e0a35a;color:#16202e" href="mailto:${esc(A.email)}">Écrire un e-mail</a>
+    <span style="font-family:var(--mono);font-size:14px;opacity:.9;word-break:break-all">${esc(A.email)}</span>
+    <a class="btn ghost" style="color:#f2efe9;border-color:#4a5666" href="${esc(A.linkedin)}" target="_blank" rel="noopener">Profil LinkedIn</a>
+    <a class="btn ghost" style="color:#f2efe9;border-color:#4a5666" href="${esc(A.site)}" target="_blank" rel="noopener">Publications et articles</a>
+  </div></div></div>`; }
+
+/* ---------- Ma progression ---------- */
+function vProgress(){
+  const g = globalStats();
+  return `<div class="eyebrow">Tableau de bord personnel</div><h1>Ma progression</h1>
+  <div class="grid g4" style="margin:18px 0 26px">${kpi("Avancement", pct(g.ratio,0), `${g.doneUnits}/${g.totalUnits} étapes`)}${kpi("Leçons terminées", Object.keys(P.lessons).filter(lessonById).length+"/"+ALL_LESSONS.length)}${kpi("Quiz réussis (≥ 80 %)", MODS.filter(m=>P.quizzes[m.id] && P.quizzes[m.id].best/P.quizzes[m.id].total>=0.8).length+"/"+MODS.length)}${kpi("Score moyen", g.nQuiz?pct(g.avg,0):"—", "Meilleur score par quiz")}</div>
+  <div class="card" style="overflow-x:auto"><table class="t" style="margin:0"><thead><tr><th>Module</th><th>Leçons</th><th>Quiz (meilleur / dernier)</th><th>Tentatives</th><th>Statut</th></tr></thead><tbody>
+  ${MODS.map(m=>{ const s = modStats(m), q = s.quiz; const st = q && q.best/q.total>=0.8 && s.done===s.total ? `<span class="tag ok">Validé</span>` : s.done||q ? `<span class="tag warn">En cours</span>` : `<span class="tag neutral">Non commencé</span>`;
+    return `<tr><td><a href="#module-${m.id}">${m.num}. ${esc(m.titre)}</a></td><td>${s.done}/${s.total}</td><td>${q?`${q.best}/${q.total} · ${q.last}/${q.total}`:"—"}</td><td>${q?q.attempts:0}</td><td>${st}</td></tr>`; }).join("")}
+  </tbody></table></div>
+  <div class="card" style="margin-top:22px"><h3>Partager mes résultats avec mon formateur</h3>
+  <p class="meta" style="color:var(--ink2)">${ctx.mode==="cloud" ? "Ta progression est déjà synchronisée : ton formateur la voit dans son espace. Ce code reste utile pour la transmettre par un autre canal." : "Ta progression est enregistrée dans ce navigateur uniquement. Génère un code et envoie-le à ton formateur (courriel, messagerie) : il l'importera dans son tableau de bord."}</p>
+  <div class="row"><div class="fld" style="flex:1;min-width:220px;margin:0"><label for="expName">Ton nom et prénom</label><input id="expName" placeholder="Ex. : Camille Martin"></div><button class="btn" id="expBtn" style="align-self:flex-end">Générer le code</button></div>
+  <div id="expOut" style="margin-top:12px"></div></div>
+  <div class="row" style="margin-top:18px"><button class="btn ghost small" id="resetBtn">Réinitialiser ma progression</button></div>`;
+}
+AFTER.progression = () => {
+  try{ const n = localStorage.getItem("riskacademie-name"); if(n) $("#expName").value = n; }catch(e){}
+  $("#expBtn").onclick = () => { const name = $("#expName").value.trim(); if(!name){ toast("Indique ton nom pour que le formateur te reconnaisse"); return; }
+    try{ localStorage.setItem("riskacademie-name", name); }catch(e){}
+    const code = "RA1:" + btoa(unescape(encodeURIComponent(JSON.stringify({ n: name, p: P }))));
+    $("#expOut").innerHTML = `<div class="fld"><textarea id="expCode" readonly>${esc(code)}</textarea></div><button class="btn small" id="copyBtn">Copier le code</button>`;
+    $("#expCode").onclick = e => e.target.select();
+    $("#copyBtn").onclick = async () => { try{ await navigator.clipboard.writeText(code); toast("Code copié"); }catch(e){ $("#expCode").select(); toast("Sélectionne le code et copie-le manuellement"); } };
+  };
+  $("#resetBtn").onclick = () => { const b = $("#resetBtn");
+    if(b.dataset.confirm){ P = { lessons:{}, quizzes:{}, calcs:{}, updatedAt:0 }; persist(); route(); toast("Progression réinitialisée"); }
+    else { b.dataset.confirm = "1"; b.textContent = "Cliquer à nouveau pour confirmer"; setTimeout(()=>{ if(b.isConnected){ delete b.dataset.confirm; b.textContent = "Réinitialiser ma progression"; } }, 4000); } };
+};
+
+/* ---------- Accès formateur (version statique) ---------- */
+function vUnlock(){ return `<div style="max-width:440px"><div class="eyebrow">Espace formateur</div><h1>Accès réservé</h1><p class="meta" style="color:var(--ink2)">Saisis le code formateur pour animer une session et consulter les résultats importés dans ce navigateur.</p>
+  <form id="unlockForm" class="card"><div class="fld"><label for="unlockCode">Code formateur</label><input id="unlockCode" type="password" autocomplete="current-password"></div><button class="btn" type="submit">Accéder</button> <span class="meta" id="unlockMsg"></span></form></div>`; }
+AFTER.formateur = () => { const f = $("#unlockForm"); if(f){ f.onsubmit = async e => { e.preventDefault();
+    try{ const h = await sha256($("#unlockCode").value.trim()); if(h === CFG.trainerHash){ ctx.owner = true; try{ sessionStorage.setItem("ra-trainer", h); }catch(_){} route(); } else $("#unlockMsg").textContent = "Code incorrect."; }
+    catch(_){ $("#unlockMsg").textContent = "Vérification impossible dans ce navigateur."; } }; return; }
+  trainerAfter(); };
+
+/* ---------- Espace formateur ---------- */
+let learners = { cloud: [], imported: [] }, subs = [];
+function vTrainer(){
+  return `<div class="row" style="justify-content:space-between"><div class="eyebrow">Espace formateur</div>${ctx.statique ? `<button class="btn ghost small" id="lockBtn">Verrouiller</button>` : ""}</div><h1>Animer et suivre la formation</h1>${ctx.statique ? `<p class="note">Version hébergée : les résultats importés sont conservés dans ce navigateur uniquement. Utilise toujours le même ordinateur et le même navigateur pour ton tableau de bord.</p>` : ""}
+  <div class="tabs"><button class="on" data-t="anim">Animer une session</button><button data-t="dash">Tableau de bord des apprenants</button></div>
+  <div data-tp="anim">
+    <p class="meta" style="color:var(--ink2)">Projette une leçon sous forme de diapositives ou un quiz en mode questions-réponses. Navigation au clavier : flèches ← →, Échap pour quitter.</p>
+    ${MODS.map(m=>`<div class="card" style="margin-top:14px;border-left:4px solid ${m.couleur}"><div class="row" style="justify-content:space-between"><h3 style="margin:0">Module ${m.num} · ${esc(m.titre)}</h3><button class="btn small" data-pq="${m.id}">Projeter le quiz</button></div>
+      <div class="grid" style="margin-top:10px;gap:8px">${m.lecons.map((l,i)=>`<div class="row" style="justify-content:space-between;border-top:1px solid var(--line);padding-top:8px"><span>${m.num}.${i+1} ${esc(l.titre)} <span class="meta">· ${l.sections.length+2} diapositives</span></span><button class="btn ghost small" data-pl="${l.id}">Présenter</button></div>`).join("")}</div></div>`).join("")}
+  </div>
+  <div data-tp="dash" hidden>
+    <div id="dashBody"><div class="empty">Chargement des données des apprenants…</div></div>
+    <div class="card" style="margin-top:22px"><h3>Importer le code d'un apprenant</h3><p class="meta" style="color:var(--ink2)">Pour les apprenants qui ne peuvent pas synchroniser leur progression (accès en lecture seule), colle ici le code généré depuis leur page « Ma progression ».</p>
+      <div class="fld"><textarea id="impCode" placeholder="RA1:…"></textarea></div><button class="btn small" id="impBtn">Importer</button> <span class="meta" id="impMsg"></span></div>
+  </div>`;
+}
+function trainerAfter(){
+  if(!ctx.owner) return;
+  const lk = $("#lockBtn"); if(lk) lk.onclick = () => { try{ sessionStorage.removeItem("ra-trainer"); }catch(e){} ctx.owner = false; location.hash = "accueil"; route(); };
+  document.querySelectorAll("[data-t]").forEach(b => b.onclick = () => { document.querySelectorAll("[data-t]").forEach(x=>x.classList.toggle("on", x===b)); document.querySelectorAll("[data-tp]").forEach(p=>p.hidden = p.dataset.tp!==b.dataset.t); if(b.dataset.t==="dash") renderDash(); });
+  document.querySelectorAll("[data-pl]").forEach(b => b.onclick = () => openPres(lessonSlides(lessonById(b.dataset.pl))));
+  document.querySelectorAll("[data-pq]").forEach(b => b.onclick = () => openPres(quizSlides(modById(b.dataset.pq))));
+  $("#impBtn").onclick = importCode;
+  startDashSubs();
+};
+function startDashSubs(){
+  if(!ctx.db){ learners.imported = loadImports(); learners._loaded = true; return; }
+  if(subs.length) return;
+  const timer = setTimeout(()=>{ if($("#dashBody") && !learners._loaded) $("#dashBody").innerHTML = `<div class="empty">Les données ne sont pas encore accessibles. Vérifie ta connexion ; la page se mettra à jour automatiquement.</div>`; }, 10000);
+  const onErr = e => { clearTimeout(timer); learners._loaded = true; if($("#dashBody")) $("#dashBody").innerHTML = `<div class="empty">Impossible de charger les données (${esc(e && e.code)}).</div>`; };
+  subs.push(ctx.db.collection("progress").onSnapshot(s => { if(!s.metadata.fromCache) clearTimeout(timer); learners._loaded = true; learners.cloud = s.docs.filter(d=>d.exists).map(d=>({ id:d.id, src:"cloud", p: normalize(d.data()||{}) })); renderDash(); }, onErr));
+  subs.push(ctx.db.collection("imported").onSnapshot(s => { learners.imported = s.docs.filter(d=>d.exists).map(d=>{ const x = d.data()||{}; return { id:d.id, src:"import", name: String(x.name||"Sans nom"), p: normalize(x.p||{}) }; }); renderDash(); }, ()=>{}));
+}
+async function renderDash(){
+  const el = $("#dashBody"); if(!el || el.closest("[data-tp]").hidden) return;
+  const list = [...learners.cloud, ...learners.imported];
+  let names = {};
+  if(ctx.user && learners.cloud.length){ try{ names = await ctx.user.profiles(learners.cloud.map(l=>l.id)) || {}; }catch(e){} }
+  if(!list.length){ el.innerHTML = `<div class="empty">${ctx.db ? "Aucun apprenant pour le moment. Partage l'application (niveau « Contributeur ») ou importe un code ci-dessous." : "Aucun apprenant importé. Demande à tes apprenants de t'envoyer le code généré depuis leur page « Ma progression », puis colle-le ci-dessous."}</div>`; return; }
+  const rows = list.map(l => ({ ...l, label: l.src==="cloud" ? ((names[l.id] && names[l.id].name) || "Apprenant") + (l.id===ctx.uid ? " (vous)" : "") : l.name, g: globalStats(l.p) })).sort((a,b)=>b.g.ratio-a.g.ratio);
+  const avgR = rows.reduce((s,r)=>s+r.g.ratio,0)/rows.length; const sc = rows.filter(r=>r.g.nQuiz); const avgS = sc.length ? sc.reduce((s,r)=>s+r.g.avg,0)/sc.length : NaN;
+  const active = rows.filter(r => r.p.updatedAt && Date.now()-r.p.updatedAt < 7*864e5).length;
+  // questions les plus ratées
+  const miss = [];
+  MODS.forEach(m => m.quiz.forEach((q,i) => { const tried = rows.filter(r=>r.p.quizzes[m.id]); if(!tried.length) return; const k = tried.filter(r=>(r.p.quizzes[m.id].wrong||[]).includes(i)).length; if(k) miss.push({ m, q, k, n: tried.length }); }));
+  miss.sort((a,b)=>b.k/b.n - a.k/a.n);
+  const cell = (q) => { if(!q) return `<td class="cell"><span class="meta">—</span></td>`; const r = q.best/q.total; return `<td class="cell"><span class="tag ${r>=0.8?"ok":r>=0.6?"warn":"ko"}">${q.best}/${q.total}</span></td>`; };
+  el.innerHTML = `<div class="grid g4" style="margin-bottom:18px">${kpi("Apprenants", rows.length, `${learners.cloud.length} synchronisés · ${learners.imported.length} importés`)}${kpi("Avancement moyen", pct(avgR,0))}${kpi("Score moyen aux quiz", isFinite(avgS)?pct(avgS,0):"—")}${kpi("Actifs (7 jours)", active)}</div>
+  <div class="card" style="overflow-x:auto"><table class="t heat" style="margin:0"><thead><tr><th>Apprenant</th><th>Avancement</th>${MODS.map(m=>`<th class="cell">Leçons M${m.num}</th><th class="cell">Quiz M${m.num}</th>`).join("")}<th>Dernière activité</th><th></th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${esc(r.label)}${r.src==="import"?` <span class="tag neutral">importé</span>`:""}</td><td style="min-width:120px"><div class="bar" style="margin:4px 0"><i style="width:${r.g.ratio*100}%;background:var(--accent)"></i></div><span class="meta">${pct(r.g.ratio,0)}</span></td>
+    ${MODS.map(m=>{ const s = modStats(m, r.p); return `<td class="cell">${s.done}/${s.total}</td>${cell(s.quiz)}`; }).join("")}
+    <td class="meta">${r.p.updatedAt ? new Date(r.p.updatedAt).toLocaleDateString("fr-FR",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}) : "—"}</td>
+    <td>${r.src==="import"?`<button class="btn ghost small" data-del="${esc(r.id)}">Retirer</button>`:""}</td></tr>`).join("")}
+  </tbody></table></div>
+  <div class="card" style="margin-top:18px"><h3>Questions les plus souvent ratées (dernière tentative)</h3>
+  ${miss.length ? `<table class="t" style="margin:0"><thead><tr><th>Module</th><th>Question</th><th class="num">Taux d'échec</th></tr></thead><tbody>${miss.slice(0,8).map(x=>`<tr><td>M${x.m.num}</td><td>${esc(x.q.q)}</td><td class="num">${x.k}/${x.n} (${pct(x.k/x.n,0)})</td></tr>`).join("")}</tbody></table><p class="meta" style="margin-top:8px">Utile pour cibler les points à reprendre lors de la prochaine session en direct.</p>` : `<p class="meta">Aucune erreur enregistrée pour l'instant.</p>`}</div>`;
+  el.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => { if(!b.dataset.c){ b.dataset.c="1"; b.textContent="Confirmer"; return; } if(!ctx.db){ saveImport(b.dataset.del, null); learners.imported = loadImports(); renderDash(); toast("Apprenant retiré"); return; } try{ await ctx.db.doc("imported/"+b.dataset.del).delete(); toast("Apprenant retiré"); }catch(e){ toast("Suppression impossible"); } });
+}
+async function importCode(){
+  const raw = $("#impCode").value.trim(), msg = $("#impMsg");
+  try{
+    if(!raw.startsWith("RA1:")) throw 0;
+    const o = JSON.parse(decodeURIComponent(escape(atob(raw.slice(4)))));
+    if(!o || typeof o.n !== "string" || !o.p) throw 0;
+    const p = normalize(o.p); const clean = { lessons:{}, quizzes:{}, calcs:{}, updatedAt: +p.updatedAt||Date.now() };
+    for(const k in p.lessons) if(lessonById(k)) clean.lessons[k] = +p.lessons[k]||Date.now();
+    for(const k in p.calcs) if(CALCS[k]) clean.calcs[k] = +p.calcs[k]||Date.now();
+    for(const k in p.quizzes){ const m = modById(k), q = p.quizzes[k]; if(!m||!q) continue; const total = m.quiz.length;
+      clean.quizzes[k] = { best: Math.min(total, Math.max(0, +q.best||0)), last: Math.min(total, Math.max(0, +q.last||0)), total, attempts: Math.max(1, +q.attempts||1), wrong: (Array.isArray(q.wrong)?q.wrong:[]).map(Number).filter(i=>i>=0&&i<total), at: +q.at||Date.now() }; }
+    const name = o.n.slice(0,80);
+    const slug = name.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,60) || "apprenant";
+    if(ctx.db) await ctx.db.doc("imported/"+slug).set({ name, p: clean, importedAt: Date.now() });
+    else { if(!saveImport(slug, { name, p: clean, importedAt: Date.now() })) throw { code: "stockage local indisponible" }; learners.imported = loadImports(); renderDash(); }
+    msg.textContent = `Progression de ${name} importée.`; $("#impCode").value = "";
+  }catch(e){ msg.textContent = e && e.code ? `Import impossible (${e.code}).` : "Code invalide : vérifie qu'il a été copié en entier."; }
+}
+
+/* ---------- Présentation ---------- */
+let slides = [], si = 0;
+function lessonSlides(l){ const m = l.mod, i = m.lecons.findIndex(x => x.id === l.id);
+  return { title: `${m.num}.${i+1} ${l.titre}`, list: [
+    `<div class="eyebrow">Module ${m.num} · ${esc(m.titre)}</div><h1>${esc(l.titre)}</h1><p style="color:#c9cfd6">Objectifs de la séance</p><ul>${l.objectifs.map(o=>`<li>${esc(o)}</li>`).join("")}</ul>`,
+    ...l.sections.map(s => `<h2>${esc(s.h)}</h2>${s.html}`),
+    `<h2>À retenir</h2><ul>${l.points.map(p=>`<li>${esc(p)}</li>`).join("")}</ul>` ] }; }
+function quizSlides(m){ return { title: `Quiz · Module ${m.num}`, list: [
+  `<div class="eyebrow">Module ${m.num}</div><h1>Quiz : ${esc(m.titre)}</h1><p style="color:#c9cfd6">${m.quiz.length} questions. Laissez le temps de répondre, puis révélez la réponse avec le bouton ou la touche Entrée.</p>`,
+  ...m.quiz.map((q,i)=>`<div class="eyebrow">Question ${i+1}/${m.quiz.length}</div><h2 style="font-size:28px">${esc(q.q)}</h2>${q.o.map((o,j)=>`<div class="opt" data-j="${j}"><strong>${"ABCD"[j]}.</strong>&nbsp;${esc(o)}</div>`).join("")}<div style="margin-top:16px"><button class="pbtn" data-reveal="${q.c}">Révéler la réponse</button></div><div class="expl" hidden>${esc(q.e)}</div>`) ] }; }
+function openPres(d){ slides = d.list; si = 0; $("#presTitle").textContent = d.title; $("#pres").classList.add("open"); showSlide(); }
+function showSlide(){ $("#presSlide").innerHTML = slides[si]; $("#presCount").textContent = `${si+1} / ${slides.length}`; $("#presBar").style.width = ((si+1)/slides.length*100)+"%";
+  const r = $("#presSlide [data-reveal]"); if(r) r.onclick = reveal; $(".stage").scrollTop = 0; }
+function reveal(){ const r = $("#presSlide [data-reveal]"); if(!r) return false; const c = +r.dataset.reveal; if(r.dataset.done) return false; r.dataset.done="1";
+  $("#presSlide").querySelectorAll(".opt").forEach(o=>{ if(+o.dataset.j===c) o.classList.add("right"); }); $("#presSlide .expl").hidden = false; r.remove(); return true; }
+function closePres(){ $("#pres").classList.remove("open"); try{ if(document.fullscreenElement) document.exitFullscreen(); }catch(e){} }
+$("#presNext").onclick = () => { if(si < slides.length-1){ si++; showSlide(); } };
+$("#presPrev").onclick = () => { if(si > 0){ si--; showSlide(); } };
+$("#presClose").onclick = closePres;
+$("#presFull").onclick = async () => { try{ if(document.fullscreenElement) await document.exitFullscreen(); else await $("#pres").requestFullscreen(); }catch(e){ toast("Plein écran indisponible dans cette vue"); } };
+document.addEventListener("keydown", e => { if(!$("#pres").classList.contains("open")) return;
+  if(e.key==="ArrowRight"||e.key===" "||e.key==="PageDown"){ e.preventDefault(); $("#presNext").click(); }
+  else if(e.key==="ArrowLeft"||e.key==="PageUp"){ e.preventDefault(); $("#presPrev").click(); }
+  else if(e.key==="Enter"){ e.preventDefault(); if(!reveal()) $("#presNext").click(); }
+  else if(e.key==="Escape"){ closePres(); } });
+
+/* ---------- Initialisation ---------- */
+window.addEventListener("hashchange", route);
+loadLocal(); setStatus("init"); route();
+(async function init(){
+  for(let i=0; i<30 && !(window.claude && typeof window.claude.use === "function"); i++) await new Promise(r=>setTimeout(r,100));
+  if(!(window.claude && typeof window.claude.use === "function")){ ctx.statique = true; setStatus("local"); try{ if(CFG.trainerHash && sessionStorage.getItem("ra-trainer") === CFG.trainerHash) ctx.owner = true; }catch(e){} route(); return; }
+  let user = null, db = null;
+  try{ [user, db] = await Promise.all([window.claude.use("user"), window.claude.use("db")]); }catch(e){}
+  ctx.user = user; ctx.db = db;
+  try{ ctx.owner = user ? !!(await user.isOwner()) : false; }catch(e){ ctx.owner = false; }
+  try{ ctx.uid = user ? await user.id() : null; }catch(e){ ctx.uid = null; }
+  let cw = null; try{ cw = user ? await user.can("data.write") : null; }catch(e){}
+  ctx.canWrite = !!(db && ctx.uid) && cw !== false;
+  if(db && ctx.uid){
+    try{ const snap = await db.doc("progress/"+ctx.uid).get(); if(snap.exists){ P = merge(P, normalize(snap.data()||{})); saveLocal(); } }catch(e){}
+    if(ctx.canWrite){ setStatus("cloud"); if(Object.keys(P.lessons).length || Object.keys(P.quizzes).length) persist(); } else setStatus("local");
+  } else setStatus("local");
+  route();
+})();
+})();
+
+</script>
 </body>
 </html>
